@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Historique des sorties (Ventes + Pertes)</h2>
+
+<form method="GET" class="row mb-4">
+  <div class="col-md-3">
+    <label>Médicament</label>
+    <select name="drug_id" class="form-select">
+      <option value="">Tous</option>
+      {% for drug in drugs %}
+        <option value="{{ drug.id }}" {% if selected_drug == drug.id %}selected{% endif %}>{{ drug.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label>Type</label>
+    <select name="type" class="form-select">
+      <option value="">Tous</option>
+      <option value="Vente" {% if selected_type == 'Vente' %}selected{% endif %}>Vente</option>
+      <option value="Perte" {% if selected_type == 'Perte' %}selected{% endif %}>Perte</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label>Depuis</label>
+    <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
+  </div>
+  <div class="col-md-2">
+    <label>Jusqu'à</label>
+    <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
+  </div>
+  <div class="col-md-3 d-flex align-items-end">
+    <button type="submit" class="btn btn-primary me-2">Filtrer</button>
+    <a href="{{ url_for('history.combined_history') }}" class="btn btn-secondary">Réinitialiser</a>
+    <a href="{{ url_for('history.export_excel', **request.args.to_dict()) }}" class="btn btn-success ms-2">📥 Excel</a>
+  </div>
+</form>
+
+<table class="table table-bordered table-hover mt-3">
+  <thead class="table-light">
+    <tr>
+      <th>Type</th>
+      <th>Médicament</th>
+      <th>Quantité</th>
+      <th>Date</th>
+      <th>Commentaire</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for item in history %}
+    <tr class="{% if item.type == 'Perte' %}table-danger{% else %}table-success{% endif %}">
+      <td>{{ item.type }}</td>
+      <td>{{ item.drug }}</td>
+      <td>{{ item.quantity }}</td>
+      <td>{{ item.date.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ item.comment }}</td>
+      <td>
+        {% if item.type == 'Perte' %}
+          <a href="{{ url_for('history.edit_loss', id=item.id) }}" class="btn btn-sm btn-warning">✏️</a>
+          <form method="POST" action="{{ url_for('history.delete_loss', id=item.id) }}" style="display:inline;">
+            <button class="btn btn-sm btn-danger" onclick="return confirm('Supprimer cette perte ?')">🗑️</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6">Aucune donnée trouvée.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

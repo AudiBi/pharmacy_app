@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Historique des ventes</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Médicament</th><th>Quantité</th><th>Date</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for sale in sales %}
+        <tr>
+            <td>{{ sale.drug.name }}</td>
+            <td>{{ sale.quantity }}</td>
+            <td>{{ sale.date.strftime('%d/%m/%Y %H:%M') }}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="3">Aucune vente enregistrée.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

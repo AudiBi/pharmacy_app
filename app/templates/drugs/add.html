@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Ajouter un médicament</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.quantity.label(class="form-label") }}
+        {{ form.quantity(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.price.label(class="form-label") }}
+        {{ form.price(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.unit.label(class="form-label") }}
+        {{ form.unit(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.expiration_date.label(class="form-label") }}
+        {{ form.expiration_date(class="form-control") }}
+    </div>
+    <button type="submit" class="btn btn-success">Ajouter</button>
+    <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-secondary">Retour</a>
+</form>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Liste des fournisseurs</h2>
+<a href="{{ url_for('supplier.add_supplier') }}" class="btn btn-primary mb-3">Ajouter un fournisseur</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nom</th><th>Contact</th><th>Adresse</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for supplier in suppliers %}
+        <tr>
+            <td>{{ supplier.name }}</td>
+            <td>{{ supplier.contact }}</td>
+            <td>{{ supplier.address }}</td>
+            <td>
+                <a href="{{ url_for('supplier.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-sm btn-warning">Modifier</a>
+            </td>
+        </tr>
+    {% else %}
+        <tr><td colspan="4">Aucun fournisseur trouvé.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

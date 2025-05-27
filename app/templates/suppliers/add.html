@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{% if supplier %}Modifier{% else %}Ajouter{% endif %} un fournisseur</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.contact.label(class="form-label") }}
+        {{ form.contact(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.address.label(class="form-label") }}
+        {{ form.address(class="form-control", rows=3) }}
+    </div>
+    <button type="submit" class="btn btn-success">{% if supplier %}Modifier{% else %}Ajouter{% endif %}</button>
+    <a href="{{ url_for('supplier.list_suppliers') }}" class="btn btn-secondary">Retour</a>
+</form>
+{% endblock %}

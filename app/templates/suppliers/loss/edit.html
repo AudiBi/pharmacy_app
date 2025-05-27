@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Modifier une perte</h2>
+<form method="POST">
+  <div class="mb-3">
+    <label>Quantité</label>
+    <input type="number" name="quantity" value="{{ loss.quantity }}" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label>Raison</label>
+    <input type="text" name="reason" value="{{ loss.reason }}" class="form-control">
+  </div>
+  <button type="submit" class="btn btn-primary">Sauvegarder</button>
+  <a href="{{ url_for('history.combined_history') }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

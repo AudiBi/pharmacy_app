@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Liste des médicaments</h2>
+<a href="{{ url_for('drug.add_drug') }}" class="btn btn-primary mb-3">Ajouter un médicament</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nom</th><th>Quantité</th><th>Prix</th><th>Unité</th><th>Expiration</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for drug in drugs %}
+        <tr>
+            <td>{{ drug.name }}</td>
+            <td>{{ drug.quantity }}</td>
+            <td>{{ "%.2f"|format(drug.price) }} €</td>
+            <td>{{ drug.unit }}</td>
+            <td>{{ drug.expiration_date.strftime('%d/%m/%Y') }}</td>
+            <td>
+                <a href="{{ url_for('drug.edit_drug', drug_id=drug.id) }}" class="btn btn-sm btn-warning">Modifier</a>
+            </td>
+        </tr>
+    {% else %}
+        <tr><td colspan="6">Aucun médicament trouvé.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

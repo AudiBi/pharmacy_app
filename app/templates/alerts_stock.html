@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Alertes Stock & Expiration</h2>
+
+<h4>Stock faible (≤ 10 unités)</h4>
+{% if low_stock_drugs %}
+<table class="table table-warning">
+    <thead><tr><th>Nom</th><th>Quantité</th><th>Unité</th></tr></thead>
+    <tbody>
+    {% for drug in low_stock_drugs %}
+        <tr>
+            <td>{{ drug.name }}</td>
+            <td>{{ drug.quantity }}</td>
+            <td>{{ drug.unit }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Aucun médicament en stock faible.</p>
+{% endif %}
+
+<h4>Médicaments périmés</h4>
+{% if expired_drugs %}
+<table class="table table-danger">
+    <thead><tr><th>Nom</th><th>Date d'expiration</th></tr></thead>
+    <tbody>
+    {% for drug in expired_drugs %}
+        <tr>
+            <td>{{ drug.name }}</td>
+            <td>{{ drug.expiration_date.strftime('%d/%m/%Y') }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Aucun médicament périmé.</p>
+{% endif %}
+
+<h4>Médicaments qui vont bientôt expirer (30 jours)</h4>
+{% if soon_expired_drugs %}
+<table class="table table-info">
+    <thead><tr><th>Nom</th><th>Date d'expiration</th></tr></thead>
+    <tbody>
+    {% for drug in soon_expired_drugs %}
+        <tr>
+            <td>{{ drug.name }}</td>
+            <td>{{ drug.expiration_date.strftime('%d/%m/%Y') }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Aucun médicament n’expire dans les 30 prochains jours.</p>
+{% endif %}
+
+{% endblock %}
