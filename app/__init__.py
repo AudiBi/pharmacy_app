@@ -1,3 +1,4 @@
+from flask_socketio import SocketIO
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -11,6 +12,8 @@ migrate = Migrate()
 
 login_manager.login_view = 'auth.login'
 
+socketio = SocketIO()
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object('config.Config')
@@ -19,6 +22,7 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    socketio.init_app(app) 
 
     # Context processor global (exemple : injecter current_year)
     @app.context_processor
@@ -26,19 +30,28 @@ def create_app():
         return {'current_year': datetime.utcnow().year}
 
     # Import des blueprints à l’intérieur de create_app pour éviter boucle
-    from app.routes import auth, drug, supplier, sale, stock_routes, dashboard, history, purchase
+    from app.routes import auth
+    from app.routes import admin
+    from app.routes import dashboard
+    from app.routes import drug
+    from app.routes import supplier
+    from app.routes import sale
+    from app.routes import stock_routes
+    from app.routes import history
+    from app.routes import purchase
 
     app.register_blueprint(auth.bp)
+    app.register_blueprint(admin.bp)
+    app.register_blueprint(dashboard.bp)
     app.register_blueprint(drug.bp)
     app.register_blueprint(supplier.bp)
     app.register_blueprint(sale.bp)
     app.register_blueprint(stock_routes.bp)
-    app.register_blueprint(dashboard.bp)
     app.register_blueprint(history.bp)
     app.register_blueprint(purchase.bp)
 
     @app.route('/')
     def index():
         return redirect(url_for('auth.login'))
-    
+
     return app

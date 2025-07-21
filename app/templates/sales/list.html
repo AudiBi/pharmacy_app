@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des ventes{% endblock %}
+
+{% block content %}
+<h2>Liste des ventes</h2>
+
+<form class="row g-3 mb-4" method="get">
+    <div class="col-md-4">
+        <input type="text" name="search" class="form-control" placeholder="Nom du médicament" value="{{ search }}">
+    </div>
+    <div class="col-md-3">
+        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+    </div>
+    <div class="col-md-3">
+        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Rechercher</button>
+    </div>
+</form>
+
+{% if sales.items %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Médicament</th>
+            <th>Quantité</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sale in sales.items %}
+        <tr>
+            <td>{{ sale.date.strftime("%d/%m/%Y %H:%M") }}</td>
+            <td>{{ sale.drug.name }}</td>
+            <td>{{ sale.quantity }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<nav>
+    <ul class="pagination">
+        {% if sales.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('sale.list_sales', page=sales.prev_num, search=search, start_date=start_date, end_date=end_date) }}">Précédent</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+        {% endif %}
+
+        <li class="page-item disabled"><span class="page-link">Page {{ sales.page }} / {{ sales.pages }}</span></li>
+
+        {% if sales.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('sale.list_sales', page=sales.next_num, search=search, start_date=start_date, end_date=end_date) }}">Suivant</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% else %}
+<div class="alert alert-info">Aucune vente trouvée pour les critères donnés.</div>
+{% endif %}
+{% endblock %}

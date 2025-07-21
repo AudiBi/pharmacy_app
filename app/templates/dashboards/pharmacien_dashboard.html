@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Pharmacien Dashboard - Pharmacie{% endblock %}
+
+{% block content %}
+<h1>Dashboard Pharmacien</h1>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card border-primary mb-3">
+      <div class="card-header">Stock total</div>
+      <div class="card-body text-primary">
+        <h5 class="card-title">{{ total_stock }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-success mb-3">
+      <div class="card-header">Ventes du jour</div>
+      <div class="card-body text-success">
+        <h5 class="card-title">{{ ventes_du_jour }}</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>Médicaments expirés ou bientôt expirés</h3>
+<ul>
+  {% for drug in drugs_expiring_soon %}
+    <li>{{ drug.name }} - Expire le {{ drug.expiration_date.strftime('%d/%m/%Y') }}</li>
+  {% else %}
+    <li>Aucun médicament en expiration proche.</li>
+  {% endfor %}
+</ul>
+
+<hr />
+
+<h3>Graphique des ventes</h3>
+<canvas id="salesChart" height="100"></canvas>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const ctx = document.getElementById('salesChart').getContext('2d');
+
+  // Données fictives, idéalement à récupérer via AJAX ou context Flask
+  const labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const salesData = [12, 19, 14, 22, 28, 25, 30];
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Ventes (unités)',
+        data: salesData,
+        backgroundColor: 'rgba(0, 123, 255, 0.7)'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>
+{% endblock %}

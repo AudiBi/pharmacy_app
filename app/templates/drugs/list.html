@@ -19,6 +19,11 @@
             <td>
                 <a href="{{ url_for('drug.edit_drug', drug_id=drug.id) }}" class="btn btn-sm btn-warning">Modifier</a>
             </td>
+            <td>
+                <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-warning">
+                Ajouter perte
+                </a>
+            </td>
         </tr>
     {% else %}
         <tr><td colspan="6">Aucun médicament trouvé.</td></tr>

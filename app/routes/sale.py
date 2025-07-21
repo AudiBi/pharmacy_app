@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, abort
+from datetime import datetime
+from flask import Blueprint, render_template, redirect, request, url_for, flash, abort
 from flask_login import login_required, current_user
 from app.models import Drug, Sale
 from app.forms import SaleForm
@@ -44,3 +45,35 @@ def new_sale():
 def history():
     sales = Sale.query.order_by(Sale.date.desc()).all()
     return render_template('sales/history.html', sales=sales)
+
+@bp.route('/list')
+@login_required
+def list_sales():
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '', type=str)
+    start_date = request.args.get('start_date', '', type=str)
+    end_date = request.args.get('end_date', '', type=str)
+
+    query = Sale.query.join(Drug)
+
+    if search:
+        query = query.filter(Drug.name.ilike(f"%{search}%"))
+
+    if start_date:
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(Sale.date >= start)
+        except ValueError:
+            flash("Format de date invalide (début)", "warning")
+
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+            query = query.filter(Sale.date <= end)
+        except ValueError:
+            flash("Format de date invalide (fin)", "warning")
+
+    sales = query.order_by(Sale.date.desc()).paginate(page=page, per_page=10)
+
+    return render_template('sales/list.html', sales=sales, search=search,
+                           start_date=start_date, end_date=end_date)

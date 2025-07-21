@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvel Achat{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Ajouter un nouvel achat</h2>
+  <form method="POST" action="">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+      {{ form.supplier.label(class="form-label") }}
+      {{ form.supplier(class="form-select") }}
+      {% if form.supplier.errors %}
+        <div class="text-danger">{{ form.supplier.errors[0] }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.drug.label(class="form-label") }}
+      {{ form.drug(class="form-select") }}
+      {% if form.drug.errors %}
+        <div class="text-danger">{{ form.drug.errors[0] }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.quantity.label(class="form-label") }}
+      {{ form.quantity(class="form-control") }}
+      {% if form.quantity.errors %}
+        <div class="text-danger">{{ form.quantity.errors[0] }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.unit_price.label(class="form-label") }}
+      {{ form.unit_price(class="form-control") }}
+      {% if form.unit_price.errors %}
+        <div class="text-danger">{{ form.unit_price.errors[0] }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.total_cost.label(class="form-label") }}
+      {{ form.total_cost(class="form-control", readonly=true) }}
+      {% if form.total_cost.errors %}
+        <div class="text-danger">{{ form.total_cost.errors[0] }}</div>
+      {% endif %}
+      <small class="form-text text-muted">Calculé automatiquement si laissé vide.</small>
+    </div>
+
+    <div class="mb-3">
+      {{ form.purchase_date.label(class="form-label") }}
+      {{ form.purchase_date(class="form-control") }}
+      {% if form.purchase_date.errors %}
+        <div class="text-danger">{{ form.purchase_date.errors[0] }}</div>
+      {% endif %}
+      <small class="form-text text-muted">Format: YYYY-MM-DD HH:MM:SS (optionnel)</small>
+    </div>
+
+    <div class="mb-3">
+      {{ form.commentaire.label(class="form-label") }}
+      {{ form.commentaire(class="form-control", rows=3) }}
+      {% if form.commentaire.errors %}
+        <div class="text-danger">{{ form.commentaire.errors[0] }}</div>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+    <a href="{{ url_for('purchase.list_purchases') }}" class="btn btn-secondary">Annuler</a>
+  </form>
+</div>
+{% endblock %}

@@ -11,7 +11,31 @@ bp = Blueprint('purchase', __name__, url_prefix='/purchases')
 def list_purchases():
     purchases = Purchase.query.order_by(Purchase.purchase_date.desc()).all()
     form = PurchaseForm()
-    return render_template('list.html', purchases=purchases, form=form)
+    return render_template('purchase/list.html', purchases=purchases, form=form)
+
+@bp.route('/new', methods=['GET', 'POST'])
+@login_required
+def new_purchase():
+    form = PurchaseForm()
+
+    if form.validate_on_submit():
+        purchase = Purchase(
+            supplier_id=form.supplier.data.id,
+            drug_id=form.drug.data.id,
+            quantity=form.quantity.data,
+            unit_price=form.unit_price.data,
+            total_cost=form.total_cost.data,
+            purchase_date=form.purchase_date.data,
+            commentaire=form.commentaire.data
+        )
+        db.session.add(purchase)
+        db.session.commit()
+
+        flash(f"Achat ajouté : {form.quantity.data} {form.drug.data.name}(s) auprès de {form.supplier.data.name}.", "success")
+        return redirect(url_for('purchase.list_purchases'))
+
+    return render_template('purchase/new.html', form=form)
+
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add_or_edit_purchase():

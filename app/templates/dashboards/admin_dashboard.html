@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Admin{% endblock %}
+
+{% block head %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Socket.IO client -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+<style>
+  #alerts {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+  }
+  .alert-item {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid #ddd;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Dashboard Admin</h1>
+
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <h4>Statistiques</h4>
+        <p><strong>Total stock :</strong> {{ total_stock }}</p>
+        <p><strong>Ventes du jour :</strong> {{ ventes_du_jour }}</p>
+      </div>
+      <div class="col-md-6">
+        <h4>Alertes</h4>
+        <div id="alerts">
+          {% for alert in alerts %}
+          <div class="alert-item alert alert-warning" role="alert">{{ alert }}</div>
+          {% else %}
+          <div>Aucune alerte</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <canvas id="salesChart" width="400" height="200"></canvas>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const socket = io();
+
+  // Données initiales vides, à remplacer par données serveur si besoin
+  let salesLabels = [];
+  let salesData = [];
+
+  // Initialisation Chart.js
+  const ctx = document.getElementById('salesChart').getContext('2d');
+  const salesChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+          labels: salesLabels,
+          datasets: [{
+              label: 'Chiffre d\'affaires (€)',
+              data: salesData,
+              borderColor: 'rgba(54, 162, 235, 1)',
+              backgroundColor: 'rgba(54, 162, 235, 0.2)',
+              fill: true,
+              tension: 0.3
+          }]
+      },
+      options: {
+          responsive: true,
+          scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Heure'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Montant (€)'
+                },
+                beginAtZero: true
+              }
+          }
+      }
+  });
+
+  // Fonction pour ajouter une alerte au DOM
+  function addAlert(message) {
+    const alertsDiv = document.getElementById('alerts');
+    const alertElem = document.createElement('div');
+    alertElem.className = 'alert-item alert alert-warning';
+    alertElem.textContent = message;
+    alertsDiv.prepend(alertElem);
+  }
+
+  // Réception d'une nouvelle vente
+  socket.on('new_sale', function(data) {
+    // Ajout label (heure)
+    salesLabels.push(data.time);
+    // Ajout montant cumul
+    let newValue = data.total_price;
+    if (salesData.length > 0) {
+      newValue += salesData[salesData.length - 1];
+    }
+    salesData.push(newValue);
+
+    // Mise à jour graphique
+    salesChart.update();
+  });
+
+  // Réception d'une nouvelle alerte
+  socket.on('new_alert', function(data) {
+    addAlert(data.message);
+  });
+</script>
+{% endblock %}

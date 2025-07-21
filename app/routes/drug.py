@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
-from app.models import Drug
-from app.forms import DrugForm
+from app.models import Drug, LossRecord
+from app.forms import DrugForm, LossForm
 from app import db
 
 bp = Blueprint('drug', __name__, url_prefix='/drugs')
@@ -57,3 +57,37 @@ def edit_drug(drug_id):
         flash(f'Médicament "{drug.name}" mis à jour.', 'success')
         return redirect(url_for('drug.list_drugs'))
     return render_template('drugs/edit.html', form=form, drug=drug)
+
+# ---- AJOUT: gestion des pertes ----
+
+@bp.route('/loss/new/<int:drug_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def new_loss(drug_id):
+    drug = Drug.query.get_or_404(drug_id)
+    form = LossForm()
+    if form.validate_on_submit():
+        if drug.quantity < form.quantity.data:
+            flash(f"Quantité de perte trop élevée (stock: {drug.quantity}).", "danger")
+            return redirect(url_for('drug.new_loss', drug_id=drug_id))
+
+        loss = LossRecord(
+            drug_id=drug.id,
+            quantity=form.quantity.data,
+            reason=form.reason.data
+        )
+        drug.quantity -= form.quantity.data
+        db.session.add(loss)
+        db.session.commit()
+        flash(f"Pertes enregistrées pour {form.quantity.data} {drug.unit}(s) de {drug.name}.", "success")
+        return redirect(url_for('drug.list_drugs'))
+
+    return render_template('drugs/loss_new.html', form=form, drug=drug)
+
+@bp.route('/losses')
+@login_required
+@admin_required
+def list_losses():
+    losses = LossRecord.query.order_by(LossRecord.date.desc()).all()
+    drugs = Drug.query.all()
+    return render_template('drugs/losses_list.html', losses=losses, drugs=drugs)

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier l'utilisateur{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Modifier l'utilisateur</h2>
+  <form method="POST" action="">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+      {{ form.username.label(class="form-label") }}
+      {{ form.username(class="form-control", placeholder="Nom d’utilisateur") }}
+      {% if form.username.errors %}
+        <div class="text-danger">
+          {% for error in form.username.errors %}
+            {{ error }}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.password.label(class="form-label") }}
+      {{ form.password(class="form-control", placeholder="Nouveau mot de passe (laisser vide si inchangé)") }}
+      {% if form.password.errors %}
+        <div class="text-danger">
+          {% for error in form.password.errors %}
+            {{ error }}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.role.label(class="form-label") }}
+      {{ form.role(class="form-select") }}
+      {% if form.role.errors %}
+        <div class="text-danger">
+          {% for error in form.role.errors %}
+            {{ error }}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="form-check mb-3">
+      {{ form.is_active(class="form-check-input") }}
+      {{ form.is_active.label(class="form-check-label") }}
+    </div>
+
+    {{ form.submit(class="btn btn-primary") }}
+    <a href="{{ url_for('admin.list_users') }}" class="btn btn-secondary ms-2">Annuler</a>
+  </form>
+</div>
+{% endblock %}

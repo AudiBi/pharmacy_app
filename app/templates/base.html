@@ -2,131 +2,150 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8" />
-    <title>Pharmacie</title>
+    <title>{% block title %}Pharmacie - Tableau de bord{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+
+    <!-- Bootstrap CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Socket.IO client -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+
     <style>
-      /* Afficher sidebar fixe sur grands écrans */
-      @media (min-width: 992px) {
-        #sidebar {
-          position: fixed;
-          top: 56px; /* hauteur navbar */
-          left: 0;
-          width: 220px;
-          height: calc(100vh - 56px);
-          border-right: 1px solid #ddd;
-          padding-top: 1rem;
-          overflow-y: auto;
-          background-color: #f8f9fa;
+        /* Style pour zone alertes persistantes */
+        #persistent-alerts {
+            position: fixed;
+            top: 56px; /* sous navbar */
+            right: 15px;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1050;
         }
-        #main-content {
-          margin-left: 220px;
-          padding-top: 1rem;
+        #persistent-alerts .alert {
+            margin-bottom: 0.5rem;
+            cursor: pointer;
         }
-        /* Cacher bouton toggle sur desktop */
-        #sidebarToggle {
-          display: none;
-        }
-      }
     </style>
+
+    {% block head %}{% endblock %}
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-  <div class="container-fluid">
-    <button
-      class="btn btn-outline-light d-lg-none me-2"
-      type="button"
-      id="sidebarToggle"
-      data-bs-toggle="offcanvas"
-      data-bs-target="#sidebar"
-      aria-controls="sidebar"
-      aria-label="Toggle navigation"
-    >
-      ☰
-    </button>
-    <a class="navbar-brand" href="/">Pharmacie</a>
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#navbarNav"
-      aria-controls="navbarNav"
-      aria-expanded="false"
-      aria-label="Toggle navigation"
-    >
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto d-none d-lg-flex">
-        <li class="nav-item"><a class="nav-link" href="/drugs/">Médicaments</a></li>
-        <li class="nav-item"><a class="nav-link" href="/drugs/expired">Médicaments expirés</a></li>
-        <li class="nav-item"><a class="nav-link" href="/suppliers/">Fournisseurs</a></li>
-        <li class="nav-item"><a class="nav-link" href="/purchases/add">Entrées stock</a></li>
-        <li class="nav-item"><a class="nav-link" href="/sales/add">Nouvelle vente</a></li>
-        <li class="nav-item"><a class="nav-link" href="/sales/history">Historique ventes</a></li>
-        <li class="nav-item"><a class="nav-link" href="/export/sales/excel">Export Excel</a></li>
-      </ul>
-      <ul class="navbar-nav">
-        <li class="nav-item"><a class="nav-link" href="/logout">Déconnexion</a></li>
-      </ul>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('dashboard.dashboard') }}">Pharmacie</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navMenu">
+            {% if current_user.is_authenticated %}
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('drug.list_drugs') }}">Stock</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('sale.list_sales') }}">Ventes</a>
+                </li>
+
+                {% if current_user.role in ['admin', 'pharmacien'] %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('purchase.list_purchases') }}">Achats</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('supplier.list_suppliers') }}">Fournisseurs</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('drug.list_losses') }}">Pertes</a>
+                </li>
+                {% endif %}
+
+                {% if current_user.role == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('admin.list_users') }}">Utilisateurs</a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item d-flex align-items-center me-3">
+                    <small class="text-light">
+                        Connecté en tant que : <strong>{{ current_user.username }}</strong> ({{ current_user.role }})
+                    </small>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('auth.logout') }}">Déconnexion</a>
+                </li>
+            </ul>
+            {% endif %}
+        </div>
     </div>
-    <span class="navbar-text text-white ms-3">{{ current_user.username }} ({{ current_user.role }})</span>
-  </div>
 </nav>
 
-<!-- Sidebar offcanvas -->
-<div
-  class="offcanvas offcanvas-start"
-  tabindex="-1"
-  id="sidebar"
-  aria-labelledby="sidebarLabel"
->
-  <div class="offcanvas-header d-lg-none">
-    <h5 class="offcanvas-title" id="sidebarLabel">Menu</h5>
-    <button
-      type="button"
-      class="btn-close text-reset"
-      data-bs-dismiss="offcanvas"
-      aria-label="Fermer"
-    ></button>
-  </div>
-  <div class="offcanvas-body p-0">
-    <nav class="nav flex-column">
-      <a class="nav-link px-3 py-2" href="/drugs/">Médicaments</a>
-      <a class="nav-link px-3 py-2" href="/drugs/expired">Médicaments expirés</a>
-      <a class="nav-link px-3 py-2" href="/suppliers/">Fournisseurs</a>
-      <a class="nav-link px-3 py-2" href="/purchases/add">Entrées stock</a>
-      <a class="nav-link px-3 py-2" href="/sales/add">Nouvelle vente</a>
-      <a class="nav-link px-3 py-2" href="/sales/history">Historique ventes</a>
-      <a class="nav-link px-3 py-2" href="/export/sales/excel">Export Excel</a>
-      <a class="nav-link px-3 py-2" href="/logout">Déconnexion</a>
-    </nav>
-  </div>
+<!-- Zone pour alertes flash classiques -->
+<div class="container mt-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message|safe }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 </div>
 
-<!-- Main content -->
-<div id="main-content" class="container-fluid mt-4">
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      {% for msg in messages %}
-        <div class="alert alert-warning">{{ msg }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-  {% block content %}{% endblock %}
+<!-- Contenu principal -->
+<div class="container mt-4">
+    {% block content %}{% endblock %}
 </div>
 
-<!-- Footer -->
-<footer class="bg-dark text-white text-center py-3 mt-auto">
-  &copy; {{ current_year }} Pharmacie - Tous droits réservés
-</footer>
+<!-- Zone notifications persistantes -->
+<div id="persistent-alerts" aria-live="polite" aria-atomic="true"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+<!-- Bootstrap JS Bundle (inclut Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Initialisation Socket.IO
+  const socket = io();
+
+  // Gestion des alertes persistantes
+  const alertContainer = document.getElementById('persistent-alerts');
+
+  // Fonction d'ajout d'une alerte persistante (clic pour fermer)
+  function addPersistentAlert(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-warning alert-dismissible fade show';
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.textContent = message;
+
+    // Ajout bouton fermeture
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-close';
+    btn.setAttribute('aria-label', 'Close');
+    btn.onclick = () => alertDiv.remove();
+
+    alertDiv.appendChild(btn);
+    alertContainer.prepend(alertDiv);
+  }
+
+  // Réception d'une nouvelle alerte push
+  socket.on('new_alert', function(data) {
+    addPersistentAlert(data.message);
+  });
+</script>
 
 {% block scripts %}{% endblock %}
+
 </body>
 </html>

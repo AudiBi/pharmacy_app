@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des Achats{% endblock %}
+
+{% block content %}
+  <h1>Liste des Achats</h1>
+
+  {% if purchases %}
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Médicament</th>
+          <th>Quantité</th>
+          <th>Prix Unitaire</th>
+          <th>Date d'achat</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for purchase in purchases %}
+          <tr>
+            <td>{{ purchase.id }}</td>
+            <td>{{ purchase.drug.name }}</td>
+            <td>{{ purchase.quantity }}</td>
+            <td>{{ purchase.price }} €</td>
+            <td>{{ purchase.date.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+              <a href="{{ url_for('purchase.edit_purchase', purchase_id=purchase.id) }}" class="btn btn-sm btn-primary">Modifier</a>
+              <a href="{{ url_for('purchase.delete_purchase', purchase_id=purchase.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet achat ?');">Supprimer</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Aucun achat enregistré.</p>
+  {% endif %}
+
+  <a href="{{ url_for('purchase.new_purchase') }}" class="btn btn-success">Ajouter un nouvel achat</a>
+{% endblock %}

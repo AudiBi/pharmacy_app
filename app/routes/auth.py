@@ -14,36 +14,34 @@ def load_user(user_id):
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect_based_on_role(current_user)  # Redirection selon le rôle
+        return redirect_based_on_role(current_user)
 
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        if user and check_password_hash(user.password, form.password.data):
+        if user:
             if not user.is_active:
                 flash('Compte désactivé. Contactez un administrateur.', 'warning')
                 return redirect(url_for('auth.login'))
-            login_user(user)
-            flash('Connexion réussie !', 'success')
-            return redirect_based_on_role(user)  # Redirection selon le rôle
-        else:
-            flash('Nom d’utilisateur ou mot de passe incorrect.', 'danger')
+            if check_password_hash(user.password, form.password.data):
+                login_user(user)
+                flash('Connexion réussie !', 'success')
+                return redirect_based_on_role(user)
+        flash('Nom d’utilisateur ou mot de passe incorrect.', 'danger')
 
     return render_template('login.html', form=form)
 
-# Fonction pour rediriger en fonction du rôle
 def redirect_based_on_role(user):
-    if user.role == 'admin':
-        return redirect(url_for('dashboard.dashboard'))  # Tableau de bord pour admin
-    elif user.role == 'employee':
-        return redirect(url_for('dashboard.dashboard'))  # Tableau de bord pour employee
+    roles_valides = ['admin', 'pharmacien', 'vendeur']
+    if user.role in roles_valides:
+        return redirect(url_for('dashboard.dashboard'))
     else:
         flash("Rôle utilisateur inconnu", 'warning')
         return redirect(url_for('auth.login'))
 
 @bp.route('/logout')
-@login_required 
+@login_required
 def logout():
-    logout_user()  
-    flash('Déconnexion réussie.', 'info')  
+    logout_user()
+    flash('Déconnexion réussie.', 'info')
     return redirect(url_for('auth.login'))
