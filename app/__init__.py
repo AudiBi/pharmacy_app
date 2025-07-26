@@ -39,6 +39,7 @@ def create_app():
     from app.routes import stock_routes
     from app.routes import history
     from app.routes import purchase
+    from app.routes import category
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(admin.bp)
@@ -49,6 +50,7 @@ def create_app():
     app.register_blueprint(stock_routes.bp)
     app.register_blueprint(history.bp)
     app.register_blueprint(purchase.bp)
+    app.register_blueprint(category.bp)
 
     @app.route('/')
     def index():

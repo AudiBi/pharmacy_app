@@ -1,26 +1,97 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <h2>Liste des fournisseurs</h2>
+
 <a href="{{ url_for('supplier.add_supplier') }}" class="btn btn-primary mb-3">Ajouter un fournisseur</a>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Nom</th><th>Contact</th><th>Adresse</th><th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
+
+<!-- Table des fournisseurs -->
+<table class="table table-striped table-bordered">
+ <thead>
+  <tr>
+    {% set current_args = request.args.copy() %}
+    {% set sort = request.args.get('sort', '') %}
+    {% set order = request.args.get('order', 'asc') %}
+    
+    <th>
+      {% set new_args = current_args.to_dict() %}
+      {% if 'sort' in new_args %} {% set _ = new_args.pop('sort') %} {% endif %}
+      {% if 'order' in new_args %} {% set _ = new_args.pop('order') %} {% endif %}
+      <a href="{{ url_for('supplier.list_suppliers', sort='name', order='desc' if sort == 'name' and order == 'asc' else 'asc', **new_args) }}">
+        Nom {% if sort == 'name' %}{{ '🔼' if order == 'asc' else '🔽' }}{% endif %}
+      </a>
+    </th>
+
+    <th>
+      {% set new_args = current_args.to_dict() %}
+      {% if 'sort' in new_args %} {% set _ = new_args.pop('sort') %} {% endif %}
+      {% if 'order' in new_args %} {% set _ = new_args.pop('order') %} {% endif %}
+      <a href="{{ url_for('supplier.list_suppliers', sort='contact', order='desc' if sort == 'contact' and order == 'asc' else 'asc', **new_args) }}">
+        Contact {% if sort == 'contact' %}{{ '🔼' if order == 'asc' else '🔽' }}{% endif %}
+      </a>
+    </th>
+
+    <th>
+      {% set new_args = current_args.to_dict() %}
+      {% if 'sort' in new_args %} {% set _ = new_args.pop('sort') %} {% endif %}
+      {% if 'order' in new_args %} {% set _ = new_args.pop('order') %} {% endif %}
+      <a href="{{ url_for('supplier.list_suppliers', sort='address', order='desc' if sort == 'address' and order == 'asc' else 'asc', **new_args) }}">
+        Adresse {% if sort == 'address' %}{{ '🔼' if order == 'asc' else '🔽' }}{% endif %}
+      </a>
+    </th>
+
+    <th>Actions</th>
+  </tr>
+</thead>
+  <tbody>
     {% for supplier in suppliers %}
-        <tr>
-            <td>{{ supplier.name }}</td>
-            <td>{{ supplier.contact }}</td>
-            <td>{{ supplier.address }}</td>
-            <td>
-                <a href="{{ url_for('supplier.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-sm btn-warning">Modifier</a>
-            </td>
-        </tr>
+    <tr>
+      <td>{{ supplier.name }}</td>
+      <td>{{ supplier.contact }}</td>
+      <td>{{ supplier.address }}</td>
+      <td>
+        <a href="{{ url_for('supplier.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-sm btn-warning">Modifier</a>
+
+        <!-- Bouton de suppression avec modal -->
+        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ supplier.id }}">
+          Supprimer
+        </button>
+
+        <!-- Modal Bootstrap de confirmation -->
+        <div class="modal fade" id="deleteModal{{ supplier.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ supplier.id }}" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form method="POST" action="{{ url_for('supplier.delete_supplier', supplier_id=supplier.id) }}">
+                {{ delete_form_supplier.csrf_token }}
+                <div class="modal-header">
+                  <h5 class="modal-title" id="deleteModalLabel{{ supplier.id }}">Confirmer la suppression</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                  Êtes-vous sûr de vouloir supprimer le fournisseur <strong>{{ supplier.name }}</strong> ?
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non</button>
+                  <button type="submit" class="btn btn-danger">Oui</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <a href="{{ url_for('supplier.supplier_purchases', supplier_id=supplier.id) }}" class="btn btn-sm btn-warning">Achat</a>
+      </td>
+    </tr>
     {% else %}
-        <tr><td colspan="4">Aucun fournisseur trouvé.</td></tr>
+    <tr>
+      <td colspan="4" class="text-center">Aucun fournisseur trouvé.</td>
+    </tr>
     {% endfor %}
-    </tbody>
+  </tbody>
 </table>
+
+<!-- Pagination -->
+<div class="d-flex justify-content-center mt-4">
+  {{ pagination.links }}
+</div>
+
 {% endblock %}

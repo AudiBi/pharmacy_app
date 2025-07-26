@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Médicaments Bientôt Périmés{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Médicaments bientôt périmés</h2>
+
+  {% if drugs %}
+    <table class="table table-bordered table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>Nom</th>
+          <th>Quantité</th>
+          <th>Unité</th>
+          <th>Prix</th>
+          <th>Date d'expiration</th>
+          <th>Jours restants</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for drug in drugs %}
+          <tr class="{% if drug.is_expired() %}table-danger{% elif drug.will_expire_soon(7) %}table-warning{% endif %}">
+            <td>{{ drug.name }}</td>
+            <td>{{ drug.current_stock() }}</td>
+            <td>{{ drug.unit }}</td>
+            <td>{{ "%.2f"|format(drug.price) }} HTG</td>
+            <td>{{ drug.expiration_date.strftime('%d/%m/%Y') }}</td>
+            <td>
+              {% set days_left = (drug.expiration_date - current_time.date()).days %}
+              {{ days_left }} jour{{ 's' if days_left != 1 }}
+            </td>
+            <td>
+              <a href="{{ url_for('drug.edit_drug', drug_id=drug.id) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
+              <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-outline-warning">Ajouter perte</a>
+              <a href="{{ url_for('drug.drug_history', drug_id=drug.id) }}" class="btn btn-sm btn-outline-info">Historique</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Aucun médicament proche de l’expiration.</p>
+  {% endif %}
+
+  <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-secondary mt-3">Retour à la liste des médicaments</a>
+</div>
+{% endblock %}

@@ -1,8 +1,10 @@
+from collections import defaultdict
 from flask import Blueprint, redirect, render_template, flash, url_for, request
 from flask_login import login_required, current_user
 from markupsafe import Markup
 from app.models import Drug, Supplier, Sale
 from datetime import date, timedelta, datetime
+from sqlalchemy.orm import joinedload
 from app import socketio
 import random
 
@@ -23,17 +25,53 @@ def add_alert(msg):
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    total_stock = sum(drug.quantity for drug in Drug.query.all())
-    
+    # Exemple : calcul du stock total
+    total_stock = sum(drug.current_stock() for drug in Drug.query.all())
+
+    # Plage de temps aujourd'hui
     today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
-    ventes_du_jour = sum(sale.quantity for sale in Sale.query.filter(Sale.date >= today_start).all())
+    today_end = today_start + timedelta(days=1)
+
+    # Récupérer toutes les ventes du jour avec leurs items
+    sales = Sale.query.options(joinedload(Sale.items))\
+        .filter(Sale.date >= today_start, Sale.date < today_end).all()
+
+    # Quantité totale vendue aujourd'hui
+    ventes_du_jour = sum(item.quantity for sale in sales for item in sale.items)
+
+    # Exemple récupération des produits proches de péremption (< 30 jours)
+    today = datetime.utcnow().date()
+    near_expiry = []
+    for drug in Drug.query.all():
+        if drug.expiration_date:
+            days_left = (drug.expiration_date - today).days
+            if 0 <= days_left <= 30:
+                near_expiry.append((drug, days_left))
+    near_expiry.sort(key=lambda x: x[1])
+
+    # Exemple top 5 médicaments les plus vendus (par quantité)
+    sales_count = defaultdict(int)
     
-    # Préparer données initiales du graphique (labels = heures, data = CA cumulatif)
-    labels = [dt.strftime("%H:%M:%S") for dt, _ in sales]
+    sales = Sale.query.all()
+    for sale in sales:
+        for item in sale.items:
+            sales_count[item.drug.name] += item.quantity
+    top5_meds = sorted(sales_count.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    # Calcul chiffre d'affaires par heure (regroupé)
+    ca_par_heure = defaultdict(float)
+    for sale in sales:
+        heure = sale.date.replace(minute=0, second=0, microsecond=0)
+        ca_par_heure[heure] += sale.total_amount  # Vérifie que total_amount existe
+
+    heures_tries = sorted(ca_par_heure.keys())
+
+    # Préparer labels et données cumulées pour le graphique
+    labels = [h.strftime("%H:%M") for h in heures_tries]
     cumul = 0
     data = []
-    for _, montant in sales:
-        cumul += montant
+    for h in heures_tries:
+        cumul += ca_par_heure[h]
         data.append(cumul)
 
     common_data = dict(
@@ -42,6 +80,9 @@ def dashboard():
         alerts=alerts,
         sales_labels=labels,
         sales_data=data,
+        near_expiry=near_expiry,
+        top5_meds=top5_meds
+
     )
 
     if current_user.role == 'admin':
@@ -53,53 +94,6 @@ def dashboard():
     else:
         flash("Rôle inconnu ou non autorisé", "danger")
         return redirect(url_for('logout'))
-
-
-# @bp.route('/dashboard')
-# @login_required
-# def dashboard():
-#     # Statistiques communes
-#     total_drugs = Drug.query.count()
-#     total_sales = Sale.query.count()
-
-#     # Données d'alertes
-#     low_stock_threshold = 10
-#     today = date.today()
-#     soon_limit = today + timedelta(days=30)
-
-#     expired_count = Drug.query.filter(Drug.expiration_date < today).count()
-#     low_stock_count = Drug.query.filter(Drug.quantity <= low_stock_threshold).count()
-#     soon_expired_count = Drug.query.filter(
-#         Drug.expiration_date >= today,
-#         Drug.expiration_date <= soon_limit
-#     ).count()
-
-#     alerts = []
-#     if expired_count > 0:
-#         alerts.append(f"{expired_count} périmé(s)")
-#     if low_stock_count > 0:
-#         alerts.append(f"{low_stock_count} en stock faible")
-#     if soon_expired_count > 0:
-#         alerts.append(f"{soon_expired_count} bientôt périmé(s)")
-
-#     if alerts:
-#         flash(Markup(' — '.join(alerts) + f' ! <a href="{url_for("stock.alerts")}" class="alert-link">Voir les alertes</a>'), 'warning')
-
-#     if current_user.role == 'admin':
-#         total_suppliers = Supplier.query.count()
-#         return render_template('dashboard/dashboard_admin.html',
-#                                total_drugs=total_drugs,
-#                                total_sales=total_sales,
-#                                total_suppliers=total_suppliers,
-#                                expired_count=expired_count,
-#                                low_stock_count=low_stock_count,
-#                                soon_expired_count=soon_expired_count)
-#     else:
-#         return render_template('dashboard/dashboard_employee.html',
-#                                total_drugs=total_drugs,
-#                                total_sales=total_sales)
-
-
 
 
 

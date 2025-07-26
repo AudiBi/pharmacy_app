@@ -47,9 +47,67 @@
                 </td>
                 <td>
                     <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">Modifier</a>
-                    <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="btn btn-sm btn-secondary">
+                    <!-- Bouton pour ouvrir le modal -->
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#toggleModal{{ user.id }}">
                         {% if user.is_active %}Désactiver{% else %}Activer{% endif %}
-                    </a>
+                    </button>
+
+                    <!-- Modal de confirmation -->
+                    <div class="modal fade" id="toggleModal{{ user.id }}" tabindex="-1" aria-labelledby="toggleModalLabel{{ user.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="toggleModalLabel{{ user.id }}">
+                            {% if user.is_active %}
+                                Confirmer la désactivation
+                            {% else %}
+                                Confirmer l'activation
+                            {% endif %}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        </div>
+                        <div class="modal-body">
+                            {% if user.is_active %}
+                            Voulez-vous vraiment désactiver <strong>{{ user.username }}</strong> ?
+                            {% else %}
+                            Voulez-vous vraiment activer <strong>{{ user.username }}</strong> ?
+                            {% endif %}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="btn btn-primary">
+                            Confirmer
+                            </a>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                    <!-- Bouton qui déclenche le modal -->
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ user.id }}">
+                        Supprimer
+                    </button>
+
+                    <!-- Modal Bootstrap -->
+                    <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ user.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}">
+                            {{ delete_form.csrf_token }}
+                            <div class="modal-header">
+                            <h5 class="modal-title" id="deleteModalLabel{{ user.id }}">Confirmer la suppression</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                            Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ user.username }}</strong> ?
+                            </div>
+                            <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non</button>
+                            <button type="submit" class="btn btn-danger">Oui</button>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                    </div>
                 </td>
             </tr>
             {% endfor %}

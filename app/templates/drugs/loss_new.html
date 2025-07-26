@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Déclarer une perte pour {{ drug.name }}{% endblock %}
+
 {% block content %}
 <h2>Déclarer une perte pour {{ drug.name }}</h2>
 
@@ -18,6 +19,10 @@
     {% for err in form.reason.errors %}
       <div class="text-danger small">{{ err }}</div>
     {% endfor %}
+  </div>
+  <div class="mb-3">
+    {{ form.comment.label(class="form-label") }}
+    {{ form.comment(class="form-control") }}
   </div>
   {{ form.submit(class="btn btn-warning") }}
   <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-secondary ms-2">Annuler</a>

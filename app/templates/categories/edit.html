@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Modifier la catégorie</h2>
+
+  <form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+      {{ form.name.label(class="form-label") }}
+      {{ form.name(class="form-control", placeholder="Nom de la catégorie") }}
+      {% if form.name.errors %}
+        <div class="text-danger">
+          {{ form.name.errors[0] }}
+        </div>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+    <a href="{{ url_for('category.list_categories') }}" class="btn btn-secondary">Annuler</a>
+  </form>
+</div>
+{% endblock %}

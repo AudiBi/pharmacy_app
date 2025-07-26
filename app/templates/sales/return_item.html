@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Retour d'article{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4">Retour de médicament</h3>
+
+    <div class="card">
+        <div class="card-header bg-warning text-dark">
+            Vente #{{ sale_item.sale.id }} – {{ sale_item.drug.name }}
+        </div>
+        <div class="card-body">
+            <p><strong>Quantité vendue :</strong> {{ sale_item.quantity }}</p>
+            <p><strong>Déjà retournée :</strong> {{ sale_item.quantity - sale_item.net_quantity_sold() }}</p>
+            <p><strong>Disponible pour retour :</strong> {{ sale_item.net_quantity_sold() }}</p>
+            <p><strong>Prix unitaire :</strong> {{ sale_item.unit_price }} HTG</p>
+
+            <form method="post">
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Quantité à retourner</label>
+                    <input type="number" name="quantity" id="quantity" class="form-control" required
+                           min="1" max="{{ sale_item.net_quantity_sold() }}">
+                </div>
+                <div class="mb-3">
+                    <label for="reason" class="form-label">Raison du retour (optionnel)</label>
+                    <input type="text" name="reason" id="reason" class="form-control" maxlength="100"
+                           placeholder="ex: médicament endommagé, erreur client, etc.">
+                </div>
+
+                <button type="submit" class="btn btn-danger">Valider le retour</button>
+                <a href="{{ url_for('sale.sale_receipt', sale_id=sale_item.sale.id) }}" class="btn btn-secondary">Annuler</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

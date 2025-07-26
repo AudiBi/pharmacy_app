@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Historique des Retours{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Historique des retours de vente</h2>
+
+    {% if returns %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Médicament</th>
+                        <th>Vente #</th>
+                        <th>Quantité retournée</th>
+                        <th>Montant remboursé</th>
+                        <th>Raison</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in returns %}
+                    <tr>
+                        <td>{{ r.date.strftime("%d/%m/%Y %H:%M") }}</td>
+                        <td>{{ r.sale_item.drug.name }}</td>
+                        <td><a href="{{ url_for('sale.sale_receipt', sale_id=r.sale_item.sale.id) }}">
+                            {{ r.sale_item.sale.id }}</a>
+                        </td>
+                        <td>{{ r.quantity }}</td>
+                        <td>{{ "%.2f"|format(r.amount) }} HTG</td>
+                        <td>{{ r.reason or "-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">Aucun retour enregistré pour le moment.</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,73 +1,120 @@
-{% extends "base.html" %}
-
-{% block title %}Nouvel Achat{% endblock %}
-
+{% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h2>Ajouter un nouvel achat</h2>
-  <form method="POST" action="">
+<h2>Ajouter un nouvel achat</h2>
+
+<form method="POST" novalidate>
     {{ form.hidden_tag() }}
+    {% if form.errors %}
+      <div class="alert alert-danger">
+        <ul>
+          {% for field, errs in form.errors.items() %}
+            <li><strong>{{ field }}:</strong> {{ errs|join(', ') }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
 
     <div class="mb-3">
-      {{ form.supplier.label(class="form-label") }}
-      {{ form.supplier(class="form-select") }}
-      {% if form.supplier.errors %}
-        <div class="text-danger">{{ form.supplier.errors[0] }}</div>
-      {% endif %}
+        {{ form.supplier.label(class="form-label") }}
+        {{ form.supplier(class="form-select") }}
+        {% for error in form.supplier.errors %}
+            <div class="text-danger">{{ error }}</div>
+        {% endfor %}
     </div>
 
     <div class="mb-3">
-      {{ form.drug.label(class="form-label") }}
-      {{ form.drug(class="form-select") }}
-      {% if form.drug.errors %}
-        <div class="text-danger">{{ form.drug.errors[0] }}</div>
-      {% endif %}
+        {{ form.purchase_date.label(class="form-label") }}
+        {{ form.purchase_date(class="form-control") }}
+        {% for error in form.purchase_date.errors %}
+            <div class="text-danger">{{ error }}</div>
+        {% endfor %}
     </div>
 
     <div class="mb-3">
-      {{ form.quantity.label(class="form-label") }}
-      {{ form.quantity(class="form-control") }}
-      {% if form.quantity.errors %}
-        <div class="text-danger">{{ form.quantity.errors[0] }}</div>
-      {% endif %}
+        {{ form.commentaire.label(class="form-label") }}
+        {{ form.commentaire(class="form-control", rows=3) }}
+        {% for error in form.commentaire.errors %}
+            <div class="text-danger">{{ error }}</div>
+        {% endfor %}
     </div>
 
-    <div class="mb-3">
-      {{ form.unit_price.label(class="form-label") }}
-      {{ form.unit_price(class="form-control") }}
-      {% if form.unit_price.errors %}
-        <div class="text-danger">{{ form.unit_price.errors[0] }}</div>
-      {% endif %}
+    <h4>Produits achetés</h4>
+    <div id="items">
+        {% for subform in form.items %}
+        <div class="card mb-3 p-3 product-item">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    {{ subform.drug_id.label(class="form-label") }}
+                    {{ subform.drug_id(class="form-select") }}
+                    {% for error in subform.drug_id.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-2">
+                    {{ subform.quantity.label(class="form-label") }}
+                    {{ subform.quantity(class="form-control", min=1) }}
+                    {% for error in subform.quantity.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-3">
+                    {{ subform.unit_price.label(class="form-label") }}
+                    {{ subform.unit_price(class="form-control", step="0.01", min=0) }}
+                    {% for error in subform.unit_price.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-2 d-flex justify-content-end">
+                    <button type="button" class="btn btn-danger remove-item">Supprimer</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 
-    <div class="mb-3">
-      {{ form.total_cost.label(class="form-label") }}
-      {{ form.total_cost(class="form-control", readonly=true) }}
-      {% if form.total_cost.errors %}
-        <div class="text-danger">{{ form.total_cost.errors[0] }}</div>
-      {% endif %}
-      <small class="form-text text-muted">Calculé automatiquement si laissé vide.</small>
-    </div>
+    <button type="button" class="btn btn-secondary mb-3" id="add-item">Ajouter un produit</button>
+    {{ form.submit(class="btn btn-primary mb-3") }}
 
-    <div class="mb-3">
-      {{ form.purchase_date.label(class="form-label") }}
-      {{ form.purchase_date(class="form-control") }}
-      {% if form.purchase_date.errors %}
-        <div class="text-danger">{{ form.purchase_date.errors[0] }}</div>
-      {% endif %}
-      <small class="form-text text-muted">Format: YYYY-MM-DD HH:MM:SS (optionnel)</small>
-    </div>
+</form>
 
-    <div class="mb-3">
-      {{ form.commentaire.label(class="form-label") }}
-      {{ form.commentaire(class="form-control", rows=3) }}
-      {% if form.commentaire.errors %}
-        <div class="text-danger">{{ form.commentaire.errors[0] }}</div>
-      {% endif %}
-    </div>
+<script>
+// Ajouter un nouveau produit (clone du premier item)
+document.getElementById('add-item').addEventListener('click', function() {
+    const itemsDiv = document.getElementById('items');
+    const firstItem = itemsDiv.querySelector('.product-item');
+    if (!firstItem) return;
 
-    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
-    <a href="{{ url_for('purchase.list_purchases') }}" class="btn btn-secondary">Annuler</a>
-  </form>
-</div>
+    const newItem = firstItem.cloneNode(true);
+
+    // Reset values in inputs/selects
+    newItem.querySelectorAll('select, input').forEach(input => {
+        input.value = '';
+    });
+
+    // Mise à jour des indices des champs (important pour Flask-WTF)
+    let totalItems = itemsDiv.children.length;
+    newItem.querySelectorAll('select, input').forEach(input => {
+        let name = input.name;
+        if (name) {
+            input.name = name.replace(/\d+/, totalItems);
+            input.id = input.name; // mise à jour id
+        }
+    });
+
+    itemsDiv.appendChild(newItem);
+});
+
+// Supprimer un produit
+document.addEventListener('click', function(event) {
+    if (event.target.classList.contains('remove-item')) {
+        const itemsDiv = document.getElementById('items');
+        if (itemsDiv.children.length > 1) { // garder au moins un item
+            event.target.closest('.product-item').remove();
+        } else {
+            alert('Au moins un produit est requis.');
+        }
+    }
+});
+</script>
+
 {% endblock %}

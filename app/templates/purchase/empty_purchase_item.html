@@ -1,0 +1,22 @@
+<div class="card mb-3 p-3 item-form">
+  <div class="mb-3">
+    <label class="form-label" for="drug">Médicament</label>
+    <select name="drug" class="form-select" required>
+      {% for drug in drugs %}
+        <option value="{{ drug.id }}">{{ drug.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" for="quantity">Quantité</label>
+    <input type="number" name="quantity" class="form-control" min="1" required>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" for="unit_price">Prix unitaire</label>
+    <input type="number" step="0.01" name="unit_price" class="form-control" min="0" required>
+  </div>
+
+  <button type="button" class="btn btn-danger btn-sm remove-item">Supprimer ce produit</button>
+</div>

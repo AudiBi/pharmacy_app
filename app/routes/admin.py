@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from app.forms import PasswordChangeForm, UserForm
+from app.forms import DeleteUserForm, PasswordChangeForm, UserForm
 from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import current_user, login_required
@@ -43,7 +43,8 @@ def list_users():
         query = query.filter_by(role=role_filter)
 
     users = query.order_by(User.id).all()
-    return render_template('admin/user_list.html', users=users, search=search, role_filter=role_filter)
+    delete_form = DeleteUserForm()  
+    return render_template('admin/user_list.html', users=users, search=search, role_filter=role_filter, delete_form=delete_form)
 
 @bp.route('/admin/user/<int:user_id>/toggle')
 @login_required
@@ -91,3 +92,18 @@ def edit_user(user_id):
         return redirect(url_for('admin.list_users'))
 
     return render_template('admin/edit_user.html', form=form, user=user)
+
+@bp.route('/users/delete/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if user.id == current_user.id:
+        flash("Vous ne pouvez pas supprimer votre propre compte.", "danger")
+        return redirect(url_for('admin.list_users'))
+
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"L'utilisateur {user.username} a été supprimé avec succès.", "success")
+    return redirect(url_for('admin.list_users'))

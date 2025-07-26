@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Reçu de vente</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 300px;
+            margin: auto;
+            padding: 10px;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .logo {
+            max-width: 80px;
+            margin-bottom: 5px;
+        }
+
+        .pharmacy-info {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 3px 0;
+        }
+
+        tfoot td {
+            font-weight: bold;
+            border-top: 1px solid #000;
+            padding-top: 4px;
+        }
+
+        .barcode {
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            margin-top: 14px;
+        }
+
+        .totals {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .totals p {
+            margin: 2px 0;
+        }
+
+        @media print {
+            button, a {
+                display: none;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <!-- LOGO -->
+    <img src="{{ url_for('static', filename='img/logo600.png') }}" alt="Logo pharmacie" class="logo">
+    <!-- INFOS PHARMACIE -->
+    <div class="pharmacy-info">
+        <strong>Pharmacie XYZ</strong><br>
+        123 Rue de la Santé, Quartier Médical<br>
+        Tél: +509 00 00 0000<br>
+        Email: contact@pharmaciexyz.ci
+    </div>
+
+    <!-- INFOS REÇU -->
+    <p style="margin-top: 8px; font-size: 13px;">
+        Date : {{ sale.date.strftime("%d/%m/%Y %H:%M") }}<br>
+        Reçu N° : {{ sale.id }}
+    </p>
+</div>
+
+<!-- PRODUITS -->
+<table>
+    <thead>
+        <tr>
+            <th>Produit</th>
+            <th>Qté</th>
+            <th>PU</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in sale.items %}
+        <tr>
+            <td>{{ item.drug.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ "%.2f"|format(item.unit_price) }}</td>
+            <td>{{ "%.2f"|format(item.total_price) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="3">Total</td>
+            <td>{{ "%.2f"|format(sale.total_amount) }} HTG</td>
+        </tr>
+    </tfoot>
+</table>
+
+<!-- INFOS DE PAIEMENT -->
+<div class="totals">
+    {% if sale.payment %}
+        <p><strong>Payé :</strong> {{ "%.2f"|format(sale.payment.amount_paid) }} HTG</p>
+        <p><strong>Mode :</strong> {{ sale.payment.payment_method }}</p>
+        <p><strong>Rendu :</strong> {{ "%.2f"|format(sale.payment.amount_paid - sale.total_amount) }} HTG</p>
+    {% else %}
+        <p style="color: red;">⚠️ Paiement non enregistré</p>
+    {% endif %}
+</div>
+
+<!-- BARCODE -->
+<div class="barcode">
+    <svg id="barcode"></svg>
+</div>
+
+<!-- MESSAGE FINAL -->
+<div class="footer">
+    Merci pour votre achat !<br>
+    À bientôt.
+</div>
+
+<!-- ACTIONS -->
+<a href="{{ url_for('sale.list_sales') }}" class="btn btn-secondary mt-3">← Retour à la liste</a>
+<button onclick="window.print()">🖨️ Imprimer</button>
+
+<!-- BARCODE SCRIPT -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode/dist/JsBarcode.all.min.js"></script>
+<script>
+    JsBarcode("#barcode", "{{ sale.id }}", {
+        format: "CODE128",
+        width: 2,
+        height: 40,
+        displayValue: false
+    });
+</script>
+
+</body>
+</html>

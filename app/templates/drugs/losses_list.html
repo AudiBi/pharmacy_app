@@ -34,7 +34,7 @@
   <ul class="list-group">
   {% for drug in drugs %}
     <li class="list-group-item d-flex justify-content-between align-items-center">
-      {{ drug.name }} (stock: {{ drug.quantity }} {{ drug.unit }})
+      {{ drug.name }} (stock: {{ drug.current_stock() }} {{ drug.unit }})
       <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-warning">
         Ajouter une perte
       </a>

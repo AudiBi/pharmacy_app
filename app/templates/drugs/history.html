@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Historique - {{ drug.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>📊 Historique du médicament : <strong>{{ drug.name }}</strong></h2>
+  <p><strong>Unité :</strong> {{ drug.unit }} | <strong>Stock actuel :</strong> {{ drug.current_stock() }} | <strong>Date d'expiration :</strong> {{ drug.expiration_date.strftime('%d/%m/%Y') }}</p>
+
+  <hr>
+
+  <h4>🛒 Achats</h4>
+  {% if purchases %}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Fournisseur</th>
+          <th>Quantité</th>
+          <th>Prix unitaire</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in purchases %}
+        <tr>
+          <td>{{ item.purchase.purchase_date.strftime('%d/%m/%Y') }}</td>
+          <td>{{ item.purchase.supplier.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ "%.2f"|format(item.unit_price) }}</td>
+          <td>{{ "%.2f"|format(item.total_price) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Aucun achat enregistré.</p>
+  {% endif %}
+
+  <h4 class="mt-4">💰 Ventes</h4>
+  {% if sales %}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Quantité</th>
+          <th>Vendu par</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sale in sales %}
+        <tr>
+          <td>{{ sale.date.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td>{{ sale.quantity }}</td>
+          <td>{{ sale.user.username }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Aucune vente enregistrée.</p>
+  {% endif %}
+
+  <h4 class="mt-4">❌ Pertes</h4>
+  {% if losses %}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Quantité</th>
+          <th>Raison</th>
+          <th>Commentaire</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for loss in losses %}
+        <tr>
+          <td>{{ loss.date.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td>{{ loss.quantity }}</td>
+          <td>{{ loss.reason }}</td>
+          <td>{{ loss.comment or "—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Aucune perte enregistrée.</p>
+  {% endif %}
+
+  <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-secondary mt-3">⬅ Retour à la liste</a>
+</div>
+{% endblock %}
