@@ -1,58 +1,194 @@
 {% extends "base.html" %}
-
 {% block title %}Pertes de Médicaments{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-success">Pertes de Médicaments</h2>
-    <a href="#" class="btn btn-outline-success disabled">Exporter</a> <!-- Placeholder export -->
-  </div>
 
-  {% if losses %}
-    <div class="table-responsive shadow-sm rounded">
-      <table class="table table-hover align-middle table-bordered">
-        <thead class="table-primary">
-          <tr>
-            <th scope="col">Médicament</th>
-            <th scope="col">Quantité perdue</th>
-            <th scope="col">Date</th>
-            <th scope="col">Motif</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for loss in losses %}
-            <tr>
-              <td>{{ loss.drug.name }}</td>
-              <td>{{ loss.quantity }}</td>
-              <td>{{ loss.date.strftime('%d/%m/%Y à %H:%M') }}</td>
-              <td>{{ loss.reason }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% else %}
-    <div class="alert alert-info text-center mt-4" role="alert">
-      <i class="bi bi-info-circle me-2"></i> Aucune perte enregistrée.
-    </div>
-  {% endif %}
-
-  <hr class="my-5">
-
-  <h4 class="mb-3">Ajouter une perte par médicament</h4>
-  <div class="list-group shadow-sm">
-    {% for drug in drugs %}
-      <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+    <!-- En-tête -->
+    <div class="bg-success bg-opacity-10 p-3 rounded mb-4 d-flex justify-content-between align-items-center">
         <div>
-          <strong>{{ drug.name }}</strong>
-          <span class="text-muted">— Stock: {{ drug.current_stock() }} {{ drug.unit }}</span>
+            <h2 class="text-success fw-bold mb-0"><i class="bi bi-exclamation-triangle me-1"></i> Pertes de Médicaments</h2>
+            <small class="text-muted">Suivi des pertes dues à expiration, erreur ou dommage</small>
         </div>
-        <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-outline-warning">
-          <i class="bi bi-plus-circle me-1"></i> Ajouter une perte
+    </div>
+
+    <!-- Formulaire de filtrage automatique -->
+    <form method="get" class="row g-3 mb-4 shadow-sm p-3 rounded bg-light align-items-end">
+
+    <!-- Filtrer par médicament -->
+    <div class="col-md-4">
+        <label for="drug" class="form-label fw-semibold">Filtrer par médicament</label>
+        <select name="drug_id" id="drug" class="form-select" onchange="this.form.submit()">
+        <option value="">Tous les médicaments</option>
+        {% for drug in drugs %}
+            <option value="{{ drug.id }}" {% if request.args.get('drug_id') == drug.id|string %}selected{% endif %}>
+            {{ drug.name }}
+            </option>
+        {% endfor %}
+        </select>
+    </div>
+
+    <!-- Filtrer par date de début -->
+    <div class="col-md-3">
+        <label for="start_date" class="form-label fw-semibold">Date début</label>
+        <input type="date" name="start_date" id="start_date"
+            class="form-control"
+            value="{{ request.args.get('start_date', '') }}"
+            onchange="this.form.submit()">
+    </div>
+
+    <!-- Filtrer par date de fin -->
+    <div class="col-md-3">
+        <label for="end_date" class="form-label fw-semibold">Date fin</label>
+        <input type="date" name="end_date" id="end_date"
+            class="form-control"
+            value="{{ request.args.get('end_date', '') }}"
+            onchange="this.form.submit()">
+    </div>
+
+    <!-- Réinitialisation -->
+    <div class="col-md-2 d-grid">
+        <a href="{{ url_for('drug.list_losses') }}" class="btn btn-outline-secondary mt-1">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
         </a>
-      </div>
-    {% endfor %}
-  </div>
+    </div>
+    </form>
+
+
+    <!-- Total -->
+    {% if losses %}
+    <div class="alert alert-success d-flex justify-content-between align-items-center shadow-sm">
+        <div><i class="bi bi-clipboard-data me-2"></i><strong>Total des pertes affichées :</strong></div>
+        <div class="fs-5">{{ total_quantity }} unités perdues</div>
+    </div>
+    {% endif %}
+
+    <!-- Tableau -->
+    {% if losses %}
+    <div class="table-responsive shadow-sm rounded mb-5">
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-success">
+                <tr>
+                    <th>Médicament</th>
+                    <th>Quantité perdue</th>
+                    <th>Date</th>
+                    <th>Motif</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for loss in losses %}
+                <tr>
+                    <td>{{ loss.drug.name }}</td>
+                    <td>{{ loss.quantity }}</td>
+                    <td>{{ loss.date.strftime('%d/%m/%Y à %H:%M') }}</td>
+                    <td>{{ loss.reason }}</td>
+                    <td class="text-center">
+                      <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <!-- Modifier -->
+                            <a href=""
+                               class="btn btn-sm btn-outline-warning" title="Modifier">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+
+                            <!-- Supprimer -->
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                    title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+
+                        <!-- Modal suppression -->
+                        <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <form method="POST" action="">
+
+                                        <div class="modal-header">
+                                            <h5 class="modal-title text-danger" id="deleteModalLabel">
+                                                Confirmer la suppression
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            Êtes-vous sûr de vouloir supprimer cette perte <strong ></strong> ?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn btn-danger">Supprimer</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center shadow-sm">
+        <i class="bi bi-info-circle me-2"></i> Aucune perte trouvée avec les critères sélectionnés.
+    </div>
+    {% endif %}
+
+    <!-- Graphique -->
+    {% if losses %}
+    <div class="mt-5">
+        <h5 class="mb-3">Évolution des pertes par jour</h5>
+        <canvas id="lossChart" height="100"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('lossChart').getContext('2d');
+        const lossChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels | tojson }},
+                datasets: [{
+                    label: 'Quantité perdue',
+                    data: {{ chart_data | tojson }},
+                    fill: true,
+                    backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                    borderColor: 'rgba(25, 135, 84, 1)',
+                    tension: 0.3,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+
+    <!-- Ajouter une perte -->
+    <hr class="my-5">
+    <h4 class="mb-3">Ajouter une perte par médicament</h4>
+    <div class="list-group shadow-sm">
+        {% for drug in drugs %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ drug.name }}</strong>
+                <small class="text-muted ms-2">Stock actuel : {{ drug.current_stock() }} {{ drug.unit }}</small>
+            </div>
+            <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-plus-circle"></i> Ajouter une perte
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
 </div>
 {% endblock %}

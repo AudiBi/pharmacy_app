@@ -1,117 +1,161 @@
 {% extends "base.html" %}
+{% block title %}Utilisateurs{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <h2>Liste des utilisateurs</h2>
 
-    <a href="{{ url_for('admin.create_user') }}" class="btn btn-success mb-3">+ Nouvel utilisateur</a>
-    
-    <form method="get" class="row g-3 mb-4">
-        <div class="col-md-4">
-            <input type="text" name="search" placeholder="Recherche par nom" class="form-control" value="{{ search }}">
-        </div>
-        <div class="col-md-3">
-            <select name="role" class="form-select">
-                <option value="">Tous les rôles</option>
-                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
-                <option value="pharmacien" {% if role_filter == 'pharmacien' %}selected{% endif %}>Pharmacien</option>
-                <option value="vendeur" {% if role_filter == 'vendeur' %}selected{% endif %}>Vendeur</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100">Filtrer</button>
-        </div>
+    <!-- En-tête douce pharmacie -->
+    <div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+        <h2 class="text-success fw-bold mb-0"><i class="bi bi-person-gear me-1"></i> Liste des utilisateurs</h2>
+        <small class="text-muted">Gestion des comptes et rôles d'accès</small>
+    </div>
+
+    <!-- Bouton d'ajout -->
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-success">
+            <i class="bi bi-person-plus"></i> Nouvel utilisateur
+        </a>
+    </div>
+
+    <!-- Formulaire de recherche / filtre automatique -->
+    <form method="get" class="row g-3 mb-4 align-items-end shadow-sm p-3 rounded bg-light mt-3">
+
+    <!-- Recherche par nom -->
+    <div class="col-md-5">
+        <label for="search" class="form-label fw-semibold">Rechercher un utilisateur :</label>
+        <input type="text" name="search" id="search" class="form-control"
+            placeholder="Nom d'utilisateur"
+            value="{{ search }}" oninput="this.form.submit()">
+    </div>
+
+    <!-- Filtrer par rôle -->
+    <div class="col-md-4">
+        <label for="role" class="form-label fw-semibold">Filtrer par rôle :</label>
+        <select name="role" id="role" class="form-select" onchange="this.form.submit()">
+        <option value="">Tous les rôles</option>
+        <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+        <option value="pharmacien" {% if role_filter == 'pharmacien' %}selected{% endif %}>Pharmacien</option>
+        <option value="vendeur" {% if role_filter == 'vendeur' %}selected{% endif %}>Vendeur</option>
+        </select>
+    </div>
+
+    <!-- Réinitialiser -->
+    <div class="col-md-3 d-grid">
+        <a href="{{ url_for('admin.list_users') }}" class="btn btn-outline-secondary mt-1">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
+        </a>
+    </div>
+
     </form>
-    <table class="table table-bordered table-hover">
-        <thead class="table-light">
-            <tr>
-                <th>ID</th>
-                <th>Nom d’utilisateur</th>
-                <th>Rôle</th>
-                <th>Actif</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.role }}</td>
-                <td>
-                    {% if user.is_active %}
-                        <span class="badge bg-success">Oui</span>
-                    {% else %}
-                        <span class="badge bg-danger">Non</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">Modifier</a>
-                    <!-- Bouton pour ouvrir le modal -->
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#toggleModal{{ user.id }}">
-                        {% if user.is_active %}Désactiver{% else %}Activer{% endif %}
-                    </button>
 
-                    <!-- Modal de confirmation -->
-                    <div class="modal fade" id="toggleModal{{ user.id }}" tabindex="-1" aria-labelledby="toggleModalLabel{{ user.id }}" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="toggleModalLabel{{ user.id }}">
-                            {% if user.is_active %}
-                                Confirmer la désactivation
-                            {% else %}
-                                Confirmer l'activation
-                            {% endif %}
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                        </div>
-                        <div class="modal-body">
-                            {% if user.is_active %}
-                            Voulez-vous vraiment désactiver <strong>{{ user.username }}</strong> ?
-                            {% else %}
-                            Voulez-vous vraiment activer <strong>{{ user.username }}</strong> ?
-                            {% endif %}
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                            <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="btn btn-primary">
-                            Confirmer
+    <!-- Tableau des utilisateurs -->
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-success">
+                <tr>
+                    <th>ID</th>
+                    <th>Nom d’utilisateur</th>
+                    <th>Rôle</th>
+                    <th>Actif</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>
+                        {% if user.is_active %}
+                            <span class="badge bg-success">Oui</span>
+                        {% else %}
+                            <span class="badge bg-danger">Non</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <!-- Modifier -->
+                            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+                               class="btn btn-sm btn-outline-warning" title="Modifier">
+                                <i class="bi bi-pencil-square"></i>
                             </a>
-                        </div>
-                        </div>
-                    </div>
-                    </div>
-                    <!-- Bouton qui déclenche le modal -->
-                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ user.id }}">
-                        Supprimer
-                    </button>
 
-                    <!-- Modal Bootstrap -->
-                    <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ user.id }}" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}">
-                            {{ delete_form.csrf_token }}
-                            <div class="modal-header">
-                            <h5 class="modal-title" id="deleteModalLabel{{ user.id }}">Confirmer la suppression</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                            </div>
-                            <div class="modal-body">
-                            Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ user.username }}</strong> ?
-                            </div>
-                            <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non</button>
-                            <button type="submit" class="btn btn-danger">Oui</button>
-                            </div>
-                        </form>
+                            <!-- Activer / Désactiver -->
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="modal" data-bs-target="#toggleModal{{ user.id }}"
+                                    title="{% if user.is_active %}Désactiver{% else %}Activer{% endif %}">
+                                <i class="bi bi-toggle-{{ 'on' if user.is_active else 'off' }}"></i>
+                            </button>
+
+                            <!-- Supprimer -->
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="modal" data-bs-target="#deleteModal{{ user.id }}"
+                                    title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
-                    </div>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+                        <!-- Modal activation/désactivation -->
+                        <div class="modal fade" id="toggleModal{{ user.id }}" tabindex="-1" aria-labelledby="toggleModalLabel{{ user.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="toggleModalLabel{{ user.id }}">
+                                            {% if user.is_active %}Confirmer la désactivation{% else %}Confirmer l'activation{% endif %}
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% if user.is_active %}
+                                            Voulez-vous vraiment désactiver <strong>{{ user.username }}</strong> ?
+                                        {% else %}
+                                            Voulez-vous vraiment activer <strong>{{ user.username }}</strong> ?
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                        <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}"
+                                           class="btn btn-primary">Confirmer</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal suppression -->
+                        <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ user.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}">
+                                        {{ delete_form.csrf_token }}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title text-danger" id="deleteModalLabel{{ user.id }}">
+                                                Confirmer la suppression
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ user.username }}</strong> ?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn btn-danger">Supprimer</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">Aucun utilisateur trouvé.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
 </div>
 {% endblock %}

@@ -1,32 +1,51 @@
 {% extends "base.html" %}
 
+{% block title %}Créer un nouvel utilisateur{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
-    <h2>Créer un utilisateur</h2>
-    <form method="POST">
-        {{ form.hidden_tag() }}
-        
-        <div class="mb-3">
-            {{ form.username.label(class="form-label") }}
-            {{ form.username(class="form-control") }}
-        </div>
 
-        <div class="mb-3">
-            {{ form.password.label(class="form-label") }}
-            {{ form.password(class="form-control") }}
-        </div>
+  <!-- En-tête pharmacie -->
+  <div class="bg-success bg-opacity-10 p-4 rounded mb-4 shadow-sm">
+    <h2 class="text-success fw-bold mb-1"><i class="bi bi-person-plus me-1"></i> Créer un utilisateur</h2>
+    <small class="text-muted">Formulaire d'ajout d'un nouvel utilisateur à la plateforme</small>
+  </div>
 
-        <div class="mb-3">
-            {{ form.role.label(class="form-label") }}
-            {{ form.role(class="form-select") }}
-        </div>
+  <!-- Formulaire -->
+  <form method="POST" class="shadow-sm border p-4 bg-light rounded">
+    {{ form.hidden_tag() }}
 
-        <div class="form-check mb-3">
-            {{ form.is_active(class="form-check-input") }}
-            {{ form.is_active.label(class="form-check-label") }}
-        </div>
+    <div class="mb-3">
+      <label for="username" class="form-label fw-semibold">Nom d'utilisateur</label>
+      {{ form.username(class="form-control", placeholder="Entrez le nom d'utilisateur") }}
+    </div>
 
-        <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
-    </form>
+    <div class="mb-3">
+      <label for="password" class="form-label fw-semibold">Mot de passe</label>
+      {{ form.password(class="form-control", placeholder="Entrez un mot de passe sécurisé") }}
+    </div>
+
+    <div class="mb-3">
+      <label for="role" class="form-label fw-semibold">Rôle</label>
+      {{ form.role(class="form-select") }}
+    </div>
+
+    <div class="form-check form-switch mb-4">
+      {{ form.is_active(class="form-check-input", id="is_active") }}
+      <label class="form-check-label fw-semibold" for="is_active">
+        Activer ce compte
+      </label>
+    </div>
+
+    <div class="d-flex justify-content-between">
+      <a href="{{ url_for('admin.list_users') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+      </a>
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-check-circle me-1"></i> Créer l'utilisateur
+      </button>
+    </div>
+  </form>
+
 </div>
 {% endblock %}

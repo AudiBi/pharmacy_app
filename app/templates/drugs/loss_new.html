@@ -1,30 +1,60 @@
 {% extends 'base.html' %}
-{% block title %}Déclarer une perte pour {{ drug.name }}{% endblock %}
+
+{% block title %}Déclarer une perte - {{ drug.name }}{% endblock %}
 
 {% block content %}
-<h2>Déclarer une perte pour {{ drug.name }}</h2>
+<div class="container mt-5">
 
-<form method="POST">
-  {{ form.hidden_tag() }}
-  <div class="mb-3">
-    {{ form.quantity.label(class="form-label") }}
-    {{ form.quantity(class="form-control", min=1) }}
-    {% for err in form.quantity.errors %}
-      <div class="text-danger small">{{ err }}</div>
-    {% endfor %}
+  <!-- En-tête contextuelle -->
+  <div class="bg-success bg-opacity-10 p-4 rounded mb-4 shadow-sm">
+    <h2 class="text-success fw-bold mb-1"><i class="bi bi-file-text me-1"></i> Déclarer une Perte</h2>
+    <small class="text-muted">Produit concerné : <strong>{{ drug.name }}</strong></small>
   </div>
-  <div class="mb-3">
-    {{ form.reason.label(class="form-label") }}
-    {{ form.reason(class="form-control") }}
-    {% for err in form.reason.errors %}
-      <div class="text-danger small">{{ err }}</div>
-    {% endfor %}
+
+  <!-- Formulaire -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <!-- Quantité perdue -->
+        <div class="mb-3">
+          {{ form.quantity.label(class="form-label fw-semibold") }}
+          {{ form.quantity(class="form-control", min=1, placeholder="Ex. : 5") }}
+          {% if form.quantity.errors %}
+            <div class="text-danger small mt-1">
+              <i class="bi bi-exclamation-circle me-1"></i> {{ form.quantity.errors[0] }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Raison de la perte -->
+        <div class="mb-3">
+          {{ form.reason.label(class="form-label fw-semibold") }}
+          {{ form.reason(class="form-control", placeholder="Ex. : Produit périmé") }}
+          {% if form.reason.errors %}
+            <div class="text-danger small mt-1">
+              <i class="bi bi-exclamation-circle me-1"></i> {{ form.reason.errors[0] }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Commentaire optionnel -->
+        <div class="mb-3">
+          {{ form.comment.label(class="form-label fw-semibold") }}
+          {{ form.comment(class="form-control", placeholder="Ajouter un commentaire (facultatif)") }}
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left-circle me-1"></i> Annuler
+          </a>
+          {{ form.submit(class="btn btn-success") }}
+        </div>
+      </form>
+    </div>
   </div>
-  <div class="mb-3">
-    {{ form.comment.label(class="form-label") }}
-    {{ form.comment(class="form-control") }}
-  </div>
-  {{ form.submit(class="btn btn-warning") }}
-  <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-secondary ms-2">Annuler</a>
-</form>
+
+</div>
 {% endblock %}

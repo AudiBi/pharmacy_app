@@ -15,6 +15,11 @@ bp = Blueprint('admin', __name__, url_prefix='/admin')
 def create_user():
     form = UserForm()
     if form.validate_on_submit():
+        existing_user = User.query.filter_by(username=form.username.data).first()
+        if existing_user:
+            flash(f"L'utilisateur '{form.username.data}' existe déjà.", "warning")
+            return render_template('admin/create_user.html', form=form)
+
         hashed_password = generate_password_hash(form.password.data)
         user = User(
             username=form.username.data,
@@ -44,6 +49,7 @@ def list_users():
 
     users = query.order_by(User.id).all()
     delete_form = DeleteUserForm()  
+    
     return render_template('admin/user_list.html', users=users, search=search, role_filter=role_filter, delete_form=delete_form)
 
 @bp.route('/admin/user/<int:user_id>/toggle')

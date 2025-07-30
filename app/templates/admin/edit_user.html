@@ -1,18 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Modifier l'utilisateur{% endblock %}
+{% block title %}Modifier un utilisateur{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2>Modifier l'utilisateur</h2>
-  <form method="POST" action="">
+<div class="container mt-5">
+
+  <!-- En-tête douce pharmacie -->
+  <div class="bg-success bg-opacity-10 p-4 rounded mb-4 shadow-sm">
+    <h2 class="text-success fw-bold mb-1"><i class="bi bi-pencil-square me-1"></i> Modifier l'utilisateur</h2>
+    <small class="text-muted">Mise à jour des informations du compte</small>
+  </div>
+
+  <!-- Formulaire -->
+  <form method="POST" class="shadow-sm border p-4 bg-light rounded">
     {{ form.hidden_tag() }}
 
     <div class="mb-3">
-      {{ form.username.label(class="form-label") }}
+      <label class="form-label fw-semibold">Nom d'utilisateur</label>
       {{ form.username(class="form-control", placeholder="Nom d’utilisateur") }}
       {% if form.username.errors %}
-        <div class="text-danger">
+        <div class="text-danger small mt-1">
           {% for error in form.username.errors %}
             {{ error }}
           {% endfor %}
@@ -21,10 +28,10 @@
     </div>
 
     <div class="mb-3">
-      {{ form.password.label(class="form-label") }}
-      {{ form.password(class="form-control", placeholder="Nouveau mot de passe (laisser vide si inchangé)") }}
+      <label class="form-label fw-semibold">Mot de passe</label>
+      {{ form.password(class="form-control", placeholder="Laisser vide si inchangé") }}
       {% if form.password.errors %}
-        <div class="text-danger">
+        <div class="text-danger small mt-1">
           {% for error in form.password.errors %}
             {{ error }}
           {% endfor %}
@@ -33,10 +40,10 @@
     </div>
 
     <div class="mb-3">
-      {{ form.role.label(class="form-label") }}
+      <label class="form-label fw-semibold">Rôle</label>
       {{ form.role(class="form-select") }}
       {% if form.role.errors %}
-        <div class="text-danger">
+        <div class="text-danger small mt-1">
           {% for error in form.role.errors %}
             {{ error }}
           {% endfor %}
@@ -44,13 +51,22 @@
       {% endif %}
     </div>
 
-    <div class="form-check mb-3">
-      {{ form.is_active(class="form-check-input") }}
-      {{ form.is_active.label(class="form-check-label") }}
+    <div class="form-check form-switch mb-4">
+      {{ form.is_active(class="form-check-input", id="is_active") }}
+      <label class="form-check-label fw-semibold" for="is_active">
+        Compte actif
+      </label>
     </div>
 
-    {{ form.submit(class="btn btn-primary") }}
-    <a href="{{ url_for('admin.list_users') }}" class="btn btn-secondary ms-2">Annuler</a>
+    <div class="d-flex justify-content-between">
+      <a href="{{ url_for('admin.list_users') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+      </a>
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-save me-1"></i> Sauvegarder
+      </button>
+    </div>
+
   </form>
 </div>
 {% endblock %}

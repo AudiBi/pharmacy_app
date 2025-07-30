@@ -5,101 +5,127 @@
 {% block content %}
 <div class="container mt-5">
 
-  <h2 class="mb-4 text-success fw-bold">📂 Catégories de médicaments</h2>
+  <!-- En-tête douce pharmacie -->
+  <div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+    <h2 class="text-success fw-bold mb-0"><i class="bi bi-tags me-1"></i> Catégories de médicaments</h2>
+    <small class="text-muted">Gestion des groupes de médicaments</small>
+  </div>
 
   <!-- Bouton d'ajout -->
-  <a href="{{ url_for('category.add_category') }}" class="btn btn-success mb-4">
-    <i class="bi bi-plus-circle me-1"></i> Ajouter une catégorie
-  </a>
+  <div class="d-flex justify-content-end mb-3">
+    <a href="{{ url_for('category.add_category') }}" class="btn btn-success">
+      <i class="bi bi-plus-circle me-1"></i> Ajouter une catégorie
+    </a>
+  </div>
 
-  <!-- Formulaire de recherche -->
-  <form method="get" class="mb-4">
-    <div class="input-group">
-      <input type="text" name="search" class="form-control" placeholder="🔍 Rechercher une catégorie..." value="{{ search_query }}">
-      <button class="btn btn-outline-primary" type="submit">
-        Rechercher
-      </button>
+  <!-- Formulaire de recherche automatique -->
+  <form method="get" class="row g-3 mb-4 align-items-end shadow-sm p-3 rounded bg-light mt-3">
+    <div class="col-md-9">
+      <label for="search" class="form-label fw-semibold">Rechercher une catégorie :</label>
+      <input type="text" name="search" id="search" class="form-control"
+             placeholder="Ex : Antibiotiques, Antalgiques..." value="{{ search_query }}"
+             oninput="this.form.submit()">
+    </div>
+    <div class="col-md-3 d-grid">
+      <a href="{{ url_for('category.list_categories') }}" class="btn btn-outline-secondary mt-1">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
+      </a>
     </div>
   </form>
 
   {% if categories %}
-    <div class="table-responsive shadow-sm rounded">
-      <table class="table table-striped table-hover align-middle">
-        <thead class="table-light">
-          <tr>
-            <th style="width: 80px;">ID</th>
-            <th>Nom</th>
-            <th class="text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for category in categories %}
-          <tr>
-            <td>{{ category.id }}</td>
-            <td>{{ category.name }}</td>
-            <td class="text-center">
-              <a href="{{ url_for('category.edit_category', category_id=category.id) }}" class="btn btn-sm btn-warning" title="Modifier">
+  <!-- Tableau -->
+  <div class="table-responsive shadow-sm rounded">
+    <table class="table table-hover align-middle table-striped">
+      <thead class="table-success">
+        <tr>
+          <th style="width: 80px;">ID</th>
+          <th>Nom</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for category in categories %}
+        <tr>
+          <td>{{ category.id }}</td>
+          <td>{{ category.name }}</td>
+          <td class="text-center">
+            <div class="d-flex justify-content-center gap-2">
+              <!-- Modifier -->
+              <a href="{{ url_for('category.edit_category', category_id=category.id) }}"
+                 class="btn btn-sm btn-outline-warning" title="Modifier">
                 <i class="bi bi-pencil-square"></i>
               </a>
-              <!-- Supprimer avec modal -->
-              <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ category.id }}" title="Supprimer">
+
+              <!-- Supprimer -->
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal" data-bs-target="#deleteModal{{ category.id }}"
+                      title="Supprimer">
                 <i class="bi bi-trash"></i>
               </button>
+            </div>
 
-              <!-- Modal de suppression -->
-              <div class="modal fade" id="deleteModal{{ category.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ category.id }}" aria-hidden="true">
-                <div class="modal-dialog">
-                  <div class="modal-content">
-                    <form method="POST" action="{{ url_for('category.delete_category', category_id=category.id) }}">
-                      {{ delete_form_category.csrf_token }}
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="deleteModalLabel{{ category.id }}">Confirmation</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                      </div>
-                      <div class="modal-body">
-                        Êtes-vous sûr de vouloir supprimer la catégorie <strong>{{ category.name }}</strong> ?
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non</button>
-                        <button type="submit" class="btn btn-danger">Oui</button>
-                      </div>
-                    </form>
-                  </div>
+            <!-- Modal suppression -->
+            <div class="modal fade" id="deleteModal{{ category.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ category.id }}" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <form method="POST" action="{{ url_for('category.delete_category', category_id=category.id) }}">
+                    {{ delete_form_category.csrf_token }}
+                    <div class="modal-header">
+                      <h5 class="modal-title text-danger" id="deleteModalLabel{{ category.id }}">
+                        Confirmer la suppression
+                      </h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body">
+                      Êtes-vous sûr de vouloir supprimer la catégorie <strong>{{ category.name }}</strong> ?
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                      <button type="submit" class="btn btn-danger">Supprimer</button>
+                    </div>
+                  </form>
                 </div>
               </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+            </div>
 
-    <!-- Pagination -->
-    <nav aria-label="Pagination" class="mt-4">
-      <ul class="pagination justify-content-center">
-        {% if pagination.has_prev %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ pagination.prev_num }}&search={{ search_query }}">← Précédent</a>
-          </li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">← Précédent</span></li>
-        {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
-        <li class="page-item disabled">
-          <span class="page-link">Page {{ pagination.page }} / {{ pagination.pages }}</span>
-        </li>
+  <!-- Pagination -->
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if pagination.has_prev %}
+      <li class="page-item">
+        <a class="page-link text-success" href="?page={{ pagination.prev_num }}&search={{ search_query }}">← Précédent</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">← Précédent</span></li>
+      {% endif %}
 
-        {% if pagination.has_next %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ pagination.next_num }}&search={{ search_query }}">Suivant →</a>
-          </li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">Suivant →</span></li>
-        {% endif %}
-      </ul>
-    </nav>
+      <li class="page-item disabled">
+        <span class="page-link">Page {{ pagination.page }} / {{ pagination.pages }}</span>
+      </li>
+
+      {% if pagination.has_next %}
+      <li class="page-item">
+        <a class="page-link text-success" href="?page={{ pagination.next_num }}&search={{ search_query }}">Suivant →</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Suivant →</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+
   {% else %}
-    <div class="alert alert-info">Aucune catégorie enregistrée pour le moment.</div>
+  <div class="alert alert-info text-center mt-4">
+    <i class="bi bi-info-circle me-2"></i> Aucune catégorie trouvée.
+  </div>
   {% endif %}
+
 </div>
 {% endblock %}

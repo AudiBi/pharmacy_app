@@ -1,4 +1,5 @@
-from datetime import datetime
+from collections import defaultdict
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 from app.models import Category, Drug, LossRecord
@@ -148,9 +149,56 @@ def new_loss(drug_id):
 @login_required
 @admin_required
 def list_losses():
-    losses = LossRecord.query.order_by(LossRecord.date.desc()).all()
-    drugs = Drug.query.all()
-    return render_template('drugs/losses_list.html', losses=losses, drugs=drugs)
+    # Récupération des paramètres GET
+    drug_id = request.args.get('drug_id')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    # Base de la requête
+    query = LossRecord.query
+
+    # Filtrer par médicament
+    if drug_id:
+        query = query.filter(LossRecord.drug_id == int(drug_id))
+
+    # Filtrer par date de début
+    if start_date:
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(LossRecord.date >= start)
+        except ValueError:
+            pass  # Date invalide ignorée
+
+    # Filtrer par date de fin
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)  # Inclusif
+            query = query.filter(LossRecord.date < end)
+        except ValueError:
+            pass
+
+    # Exécuter la requête triée par date décroissante
+    losses = query.order_by(LossRecord.date.desc()).all()
+
+    # Récupérer la liste des médicaments pour le filtre
+    drugs = Drug.query.order_by(Drug.name).all()
+
+    # Calcul du total des quantités perdues
+    total_quantity = sum(loss.quantity for loss in losses)
+
+    # Données pour le graphique : pertes par jour
+    chart_data = defaultdict(int)
+
+    for loss in losses:
+        key = loss.date.strftime('%Y-%m-%d')
+        chart_data[key] += loss.quantity
+
+    # On trie les dates
+    labels = sorted(chart_data.keys())
+    quantities = [chart_data[date] for date in labels]
+
+    return render_template('drugs/losses_list.html', losses=losses, drugs=drugs, total_quantity=total_quantity, chart_labels=labels,
+    chart_data=quantities)
 
 
 @bp.route('/drug/<int:drug_id>/history')

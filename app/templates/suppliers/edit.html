@@ -1,21 +1,76 @@
 {% extends 'base.html' %}
+
+{% block title %}
+  {% if supplier %}Modifier un fournisseur{% else %}Ajouter un fournisseur{% endif %}
+{% endblock %}
+
 {% block content %}
-<h2>{% if supplier %}Modifier{% else %}Ajouter{% endif %} un fournisseur</h2>
-<form method="POST">
+<div class="container mt-5">
+
+  <!-- En-tête pharmacie -->
+  <div class="bg-success bg-opacity-10 p-4 rounded mb-4 shadow-sm">
+    <h2 class="text-success fw-bold mb-1">
+      {% if supplier %}<i class="bi bi-pencil-square me-1"></i> Modifier le fournisseur{% else %}<i class="bi bi-plus me-1"></i> Ajouter un fournisseur{% endif %}
+    </h2>
+    <small class="text-muted">
+      {% if supplier %}
+        Mise à jour des informations du fournisseur
+      {% else %}
+        Enregistrement d’un nouveau fournisseur
+      {% endif %}
+    </small>
+  </div>
+
+  <!-- Formulaire -->
+  <form method="POST" class="border rounded p-4 bg-light shadow-sm">
     {{ form.hidden_tag() }}
+
     <div class="mb-3">
-        {{ form.name.label(class="form-label") }}
-        {{ form.name(class="form-control") }}
+      <label class="form-label fw-semibold">Nom du fournisseur</label>
+      {{ form.name(class="form-control", placeholder="Ex : Pharma Plus") }}
+      {% if form.name.errors %}
+        <div class="text-danger small mt-1">
+          {% for error in form.name.errors %}
+            {{ error }}
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
+
     <div class="mb-3">
-        {{ form.contact.label(class="form-label") }}
-        {{ form.contact(class="form-control") }}
+      <label class="form-label fw-semibold">Contact</label>
+      {{ form.contact(class="form-control", placeholder="Ex : +509 1234 5678") }}
+      {% if form.contact.errors %}
+        <div class="text-danger small mt-1">
+          {% for error in form.contact.errors %}
+            {{ error }}
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
-    <div class="mb-3">
-        {{ form.address.label(class="form-label") }}
-        {{ form.address(class="form-control", rows=3) }}
+
+    <div class="mb-4">
+      <label class="form-label fw-semibold">Adresse</label>
+      {{ form.address(class="form-control", rows="3", placeholder="Rue, ville, etc.") }}
+      {% if form.address.errors %}
+        <div class="text-danger small mt-1">
+          {% for error in form.address.errors %}
+            {{ error }}
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
-    <button type="submit" class="btn btn-success">{% if supplier %}Modifier{% else %}Ajouter{% endif %}</button>
-    <a href="{{ url_for('supplier.list_suppliers') }}" class="btn btn-secondary">Retour</a>
-</form>
+
+    <!-- Boutons -->
+    <div class="d-flex justify-content-between">
+      <a href="{{ url_for('supplier.list_suppliers') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+      </a>
+      <button type="submit" class="btn btn-success text-white">
+        <i class="bi bi-save me-1"></i>
+        {% if supplier %}Modifier{% else %}Ajouter{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
 {% endblock %}

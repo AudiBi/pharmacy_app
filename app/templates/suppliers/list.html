@@ -1,97 +1,115 @@
 {% extends 'base.html' %}
+{% block title %}Fournisseurs{% endblock %}
 
 {% block content %}
-<h2>Liste des fournisseurs</h2>
+<div class="container mt-5">
 
-<a href="{{ url_for('supplier.add_supplier') }}" class="btn btn-primary mb-3">Ajouter un fournisseur</a>
+    <!-- En-tête pharmacie -->
+    <div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+        <h2 class="text-success fw-bold mb-0"><i class="bi bi-people me-1"></i> Liste des fournisseurs</h2>
+        <small class="text-muted">Gestion des partenaires et fournisseurs médicaux</small>
+    </div>
 
-<!-- Table des fournisseurs -->
-<table class="table table-striped table-bordered">
- <thead>
-  <tr>
-    {% set current_args = request.args.copy() %}
-    {% set sort = request.args.get('sort', '') %}
-    {% set order = request.args.get('order', 'asc') %}
-    
-    <th>
-      {% set new_args = current_args.to_dict() %}
-      {% if 'sort' in new_args %} {% set _ = new_args.pop('sort') %} {% endif %}
-      {% if 'order' in new_args %} {% set _ = new_args.pop('order') %} {% endif %}
-      <a href="{{ url_for('supplier.list_suppliers', sort='name', order='desc' if sort == 'name' and order == 'asc' else 'asc', **new_args) }}">
-        Nom {% if sort == 'name' %}{{ '🔼' if order == 'asc' else '🔽' }}{% endif %}
-      </a>
-    </th>
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{{ url_for('supplier.add_supplier') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Ajouter un fournisseur
+        </a>
+    </div>
+    <!-- Formulaire de filtre fournisseur -->
+    <form method="GET" class="mb-4 row g-3 align-items-end shadow-sm p-3 rounded bg-light mt-3">
 
-    <th>
-      {% set new_args = current_args.to_dict() %}
-      {% if 'sort' in new_args %} {% set _ = new_args.pop('sort') %} {% endif %}
-      {% if 'order' in new_args %} {% set _ = new_args.pop('order') %} {% endif %}
-      <a href="{{ url_for('supplier.list_suppliers', sort='contact', order='desc' if sort == 'contact' and order == 'asc' else 'asc', **new_args) }}">
-        Contact {% if sort == 'contact' %}{{ '🔼' if order == 'asc' else '🔽' }}{% endif %}
-      </a>
-    </th>
+      <div class="col-md-6">
+        <label for="search" class="form-label fw-semibold">Rechercher par nom ou contact :</label>
+        <input type="text" name="search" id="search" class="form-control"
+              placeholder="Ex: Medico, +509"
+              value="{{ search_query }}"
+              oninput="this.form.submit()">
+      </div>
 
-    <th>
-      {% set new_args = current_args.to_dict() %}
-      {% if 'sort' in new_args %} {% set _ = new_args.pop('sort') %} {% endif %}
-      {% if 'order' in new_args %} {% set _ = new_args.pop('order') %} {% endif %}
-      <a href="{{ url_for('supplier.list_suppliers', sort='address', order='desc' if sort == 'address' and order == 'asc' else 'asc', **new_args) }}">
-        Adresse {% if sort == 'address' %}{{ '🔼' if order == 'asc' else '🔽' }}{% endif %}
-      </a>
-    </th>
+      <div class="col-md-3 d-grid">
+        <a href="{{ url_for('supplier.list_suppliers') }}" class="btn btn-outline-secondary mt-1">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
+        </a>
+      </div>
 
-    <th>Actions</th>
-  </tr>
-</thead>
-  <tbody>
-    {% for supplier in suppliers %}
-    <tr>
-      <td>{{ supplier.name }}</td>
-      <td>{{ supplier.contact }}</td>
-      <td>{{ supplier.address }}</td>
-      <td>
-        <a href="{{ url_for('supplier.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-sm btn-warning">Modifier</a>
+    </form>
+    {% if suppliers %}
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-success">
+                <tr>
+                    <th>Nom</th>
+                    <th>Contact</th>
+                    <th>Adresse</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr>
+                    <td>{{ supplier.name }}</td>
+                    <td>{{ supplier.contact }}</td>
+                    <td>{{ supplier.address }}</td>
+                    <td class="text-center">
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <a href="{{ url_for('supplier.edit_supplier', supplier_id=supplier.id) }}"
+                               class="btn btn-sm btn-outline-warning" title="Modifier">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
 
-        <!-- Bouton de suppression avec modal -->
-        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ supplier.id }}">
-          Supprimer
-        </button>
+                            <!-- Supprimer avec modal -->
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                    data-bs-toggle="modal" data-bs-target="#deleteModal{{ supplier.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
 
-        <!-- Modal Bootstrap de confirmation -->
-        <div class="modal fade" id="deleteModal{{ supplier.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ supplier.id }}" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <form method="POST" action="{{ url_for('supplier.delete_supplier', supplier_id=supplier.id) }}">
-                {{ delete_form_supplier.csrf_token }}
-                <div class="modal-header">
-                  <h5 class="modal-title" id="deleteModalLabel{{ supplier.id }}">Confirmer la suppression</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body">
-                  Êtes-vous sûr de vouloir supprimer le fournisseur <strong>{{ supplier.name }}</strong> ?
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non</button>
-                  <button type="submit" class="btn btn-danger">Oui</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-        <a href="{{ url_for('supplier.supplier_purchases', supplier_id=supplier.id) }}" class="btn btn-sm btn-warning">Achat</a>
-      </td>
-    </tr>
+                            <!-- Modal de suppression -->
+                            <div class="modal fade" id="deleteModal{{ supplier.id }}" tabindex="-1"
+                                 aria-labelledby="deleteModalLabel{{ supplier.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ url_for('supplier.delete_supplier', supplier_id=supplier.id) }}">
+                                            {{ delete_form_supplier.csrf_token }}
+                                            <div class="modal-header">
+                                                <h5 class="modal-title text-danger" id="deleteModalLabel{{ supplier.id }}">
+                                                    Confirmation de suppression
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Êtes-vous sûr de vouloir supprimer <strong>{{ supplier.name }}</strong> ?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-danger">Supprimer</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <a href="{{ url_for('supplier.supplier_purchases', supplier_id=supplier.id) }}"
+                               class="btn btn-sm btn-outline-info" title="Voir achats">
+                                <i class="bi bi-cart-check"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-center mt-4">
+        {{ pagination.links }}
+    </div>
+
     {% else %}
-    <tr>
-      <td colspan="4" class="text-center">Aucun fournisseur trouvé.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    <div class="alert alert-info text-center shadow-sm" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i> Aucun fournisseur enregistré pour le moment.
+    </div>
+    {% endif %}
 
-<!-- Pagination -->
-<div class="d-flex justify-content-center mt-4">
-  {{ pagination.links }}
 </div>
-
 {% endblock %}

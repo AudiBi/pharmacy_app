@@ -3,33 +3,44 @@
 {% block title %}Liste des ventes{% endblock %}
 
 {% block content %}
-<h2>Liste des ventes</h2>
-<a href="{{ url_for('sale.new_sale') }}" class="btn btn-success mb-4">Effectuer une nouvelle vente</a>
+<!-- En-tête douce pharmacie -->
+<div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+  <h2 class="text-success fw-bold mb-0"><i class="bi bi-cart4 me-1"></i> Liste des ventes</h2>
+  <small class="text-muted">Historique des transactions réalisées</small>
+</div>
+
+<!-- Bouton d'ajout -->
+<div class="d-flex justify-content-end mb-3">
+  <a href="{{ url_for('sale.new_sale') }}" class="btn btn-success">
+    <i class="bi bi-plus-circle me-1"></i> Effectuer une nouvelle vente
+  </a>
+</div>
 <form method="get" class="row g-3 align-items-end mb-4">
-    <div class="col-md-3">
-        <label class="form-label">Date de début</label>
-        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">Date de fin</label>
-        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">Utilisateur</label>
-        <select name="user_id" class="form-select">
-            <option value="">-- Tous --</option>
-            {% for user in users %}
-            <option value="{{ user.id }}" {% if user.id == user_id %}selected{% endif %}>
-                {{ user.username }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-3">
-        <label class="form-label d-block">&nbsp;</label>
-        <button type="submit" class="btn btn-primary">Filtrer</button>
-        <a href="{{ url_for('sale.list_sales') }}" class="btn btn-secondary">Réinitialiser</a>
-    </div>
+  <div class="col-md-3">
+    <label class="form-label" for="start_date">Date de début</label>
+    <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}"
+           onchange="this.form.submit()">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label" for="end_date">Date de fin</label>
+    <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}"
+           onchange="this.form.submit()">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label" for="user_id">Utilisateur</label>
+    <select name="user_id" id="user_id" class="form-select" onchange="this.form.submit()">
+      <option value="">-- Tous --</option>
+      {% for user in users %}
+      <option value="{{ user.id }}" {% if user.id == user_id %}selected{% endif %}>
+        {{ user.username }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3 d-grid">
+    <label class="form-label d-block">&nbsp;</label>
+    <a href="{{ url_for('sale.list_sales') }}" class="btn btn-secondary">Réinitialiser</a>
+  </div>
 </form>
 
 {% if sales.items %}

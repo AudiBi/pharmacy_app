@@ -1,23 +1,43 @@
 {% extends 'base.html' %}
+
+{% block title %}Ajouter une Catégorie{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <h2>Ajouter une nouvelle catégorie</h2>
+<div class="container mt-5">
 
-  <form method="POST">
-    {{ form.hidden_tag() }}
+  <!-- En-tête douce pharmacie -->
+  <div class="bg-success bg-opacity-10 p-4 rounded mb-4 shadow-sm">
+    <h2 class="text-success fw-bold mb-1"><i class="bi bi-folder me-1"></i> Nouvelle Catégorie</h2>
+    <small class="text-muted">Définir un type de médicament ou de produit</small>
+  </div>
 
-    <div class="mb-3">
-      {{ form.name.label(class="form-label") }}
-      {{ form.name(class="form-control", placeholder="Nom de la catégorie") }}
-      {% if form.name.errors %}
-        <div class="text-danger">
-          {{ form.name.errors[0] }}
+  <!-- Formulaire -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+          {{ form.name.label(class="form-label fw-semibold") }}
+          {{ form.name(class="form-control", placeholder="Ex : Antibiotiques, Vitamines...") }}
+          {% if form.name.errors %}
+            <div class="text-danger small mt-1">
+              <i class="bi bi-exclamation-circle me-1"></i> {{ form.name.errors[0] }}
+            </div>
+          {% endif %}
         </div>
-      {% endif %}
-    </div>
 
-    <button type="submit" class="btn btn-success">Enregistrer</button>
-    <a href="{{ url_for('category.list_categories') }}" class="btn btn-secondary">Annuler</a>
-  </form>
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{{ url_for('category.list_categories') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle me-1"></i> Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

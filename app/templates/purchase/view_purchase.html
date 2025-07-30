@@ -1,47 +1,66 @@
 {% extends 'base.html' %}
+
+{% block title %}Détail Achat #{{ purchase.id }}{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <h2>Détails de l'achat #{{ purchase.id }}</h2>
+<div class="container mt-5">
 
-  <p>
-    <strong>Date :</strong> {{ purchase.purchase_date.strftime('%d/%m/%Y') }}<br>
-    <strong>Fournisseur :</strong> {{ purchase.supplier.name }}<br>
-    {% if purchase.commentaire %}
-      <strong>Commentaire :</strong> {{ purchase.commentaire }}<br>
-    {% endif %}
-  </p>
+  <!-- En-tête pharmacie -->
+  <div class="bg-success bg-opacity-10 p-4 rounded mb-4 shadow-sm">
+    <h2 class="text-success fw-bold mb-1"><i class="bi bi-file-text me-1"></i> Détail de l'achat #{{ purchase.id }}</h2>
+    <small class="text-muted">Informations complètes sur l'approvisionnement</small>
+  </div>
 
-  <h4 class="mt-4">Produits achetés</h4>
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Médicament</th>
-        <th>Quantité</th>
-        <th>Prix unitaire</th>
-        <th>Coût total</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% set ns = namespace(grand_total=0) %}
-      {% for item in purchase.items %}
-        {% set total = item.total_price %}
-        {% set ns.grand_total = ns.grand_total + total %}
+  <!-- Informations de l'achat -->
+  <div class="mb-4 p-3 bg-light rounded shadow-sm border">
+    <ul class="list-unstyled mb-0">
+      <li><strong><i class="bi bi-calendar me-1"></i> Date :</strong> {{ purchase.purchase_date.strftime('%d/%m/%Y') }}</li>
+      <li><strong><i class="bi bi-person-circle me-1"></i> Fournisseur :</strong> {{ purchase.supplier.name }}</li>
+      {% if purchase.commentaire %}
+      <li><strong><i class="bi bi-chat me-1"></i> Commentaire :</strong> {{ purchase.commentaire }}</li>
+      {% endif %}
+    </ul>
+  </div>
+
+  <!-- Produits achetés -->
+  <div class="table-responsive shadow-sm rounded">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-success">
         <tr>
-          <td>{{ item.drug.name }}</td>
-          <td>{{ item.quantity }}</td>
-          <td>{{ '%.2f'|format(item.unit_price) }} HTG</td>
-          <td>{{ '%.2f'|format(total) }} HTG</td>
+          <th>Médicament</th>
+          <th>Quantité</th>
+          <th>Prix unitaire (HTG)</th>
+          <th>Coût total (HTG)</th>
         </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr>
-        <th colspan="3" class="text-end">Total général</th>
-        <th>{{ '%.2f'|format(ns.grand_total) }} HTG</th>
-      </tr>
-    </tfoot>
-  </table>
+      </thead>
+      <tbody>
+        {% set ns = namespace(grand_total=0) %}
+        {% for item in purchase.items %}
+          {% set total = item.total_price %}
+          {% set ns.grand_total = ns.grand_total + total %}
+          <tr>
+            <td>{{ item.drug.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ '%.2f'|format(item.unit_price) }}</td>
+            <td>{{ '%.2f'|format(total) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="fw-bold">
+          <td colspan="3" class="text-end"><i class="bi bi-cash me-1"></i> Total général</td>
+          <td>{{ '%.2f'|format(ns.grand_total) }} HTG</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 
-  <a href="{{ url_for('purchase.list_purchases') }}" class="btn btn-secondary mt-3">← Retour à la liste</a>
+  <!-- Bouton retour -->
+  <div class="mt-4">
+    <a href="{{ url_for('purchase.list_purchases') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Retour à la liste des achats
+    </a>
+  </div>
+
 </div>
 {% endblock %}

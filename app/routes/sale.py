@@ -253,9 +253,51 @@ def return_item(sale_item_id):
 @bp.route('/returns')
 @login_required
 @staff_required
+
 def list_returns():
-    returns = ReturnRecord.query.order_by(ReturnRecord.date.desc()).limit(100).all()
-    return render_template('sales/returns.html', returns=returns)
+    # Récupération des paramètres de filtre
+    drug_id = request.args.get('drug_id', type=int)
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+
+    # Base query
+    query = ReturnRecord.query.join(ReturnRecord.sale_item).join(SaleItem.drug)
+
+    # Filtrer par médicament
+    if drug_id:
+        query = query.filter(SaleItem.drug_id == drug_id)
+
+    # Filtrer par dates
+    if start_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            query = query.filter(ReturnRecord.date >= start_date)
+        except ValueError:
+            pass  # Format de date invalide ignoré
+
+    if end_date_str:
+        try:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+            # Ajouter une journée complète à la date de fin
+            end_date = end_date.replace(hour=23, minute=59, second=59)
+            query = query.filter(ReturnRecord.date <= end_date)
+        except ValueError:
+            pass
+
+    # Tri et limite
+    returns = query.order_by(ReturnRecord.date.desc()).limit(100).all()
+
+    # Liste des médicaments pour le filtre
+    drugs = Drug.query.order_by(Drug.name).all()
+
+    return render_template(
+        'sales/returns.html',
+        returns=returns,
+        drugs=drugs,
+        selected_drug_id=drug_id,
+        start_date=start_date_str,
+        end_date=end_date_str
+    )
 
 
 @bp.route('/return-receipt/<int:return_id>')
