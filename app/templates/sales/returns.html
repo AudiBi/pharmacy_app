@@ -2,20 +2,26 @@
 {% block title %}Historique des Retours{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4">Historique des retours de vente</h2>
+<div class="container mt-5">
+
+    <!-- En-tête avec un bandeau vert doux typique pharmacie -->
+    <div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+        <h2 class="text-success fw-bold mb-0">Historique des retours de vente</h2>
+        <small class="text-muted">Suivi des retours produits et remboursements</small>
+    </div>
 
     {% if returns %}
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead class="table-light">
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-striped table-bordered align-middle">
+                <thead class="table-success">
                     <tr>
-                        <th>Date</th>
-                        <th>Médicament</th>
-                        <th>Vente #</th>
-                        <th>Quantité retournée</th>
-                        <th>Montant remboursé</th>
-                        <th>Raison</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Médicament</th>
+                        <th scope="col">Vente #</th>
+                        <th scope="col" class="text-center">Qté retournée</th>
+                        <th scope="col" class="text-end">Montant remboursé</th>
+                        <th scope="col">Raison</th>
+                        <th scope="col" class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -23,19 +29,29 @@
                     <tr>
                         <td>{{ r.date.strftime("%d/%m/%Y %H:%M") }}</td>
                         <td>{{ r.sale_item.drug.name }}</td>
-                        <td><a href="{{ url_for('sale.sale_receipt', sale_id=r.sale_item.sale.id) }}">
-                            {{ r.sale_item.sale.id }}</a>
+                        <td>
+                            <a href="{{ url_for('sale.return_receipt', return_id=r.id) }}" class="text-decoration-none" target="_blank">
+                                {{ r.sale_item.sale.id }}
+                            </a>
                         </td>
-                        <td>{{ r.quantity }}</td>
-                        <td>{{ "%.2f"|format(r.amount) }} HTG</td>
+                        <td class="text-center">{{ r.quantity }}</td>
+                        <td class="text-end">{{ "%.2f"|format(r.amount) }} HTG</td>
                         <td>{{ r.reason or "-" }}</td>
+                        <td class="text-center">
+                            <a href="{{ url_for('sale.return_receipt', return_id=r.id) }}" class="btn btn-sm btn-outline-success" target="_blank" title="Voir reçu">
+                                <i class="bi bi-receipt"></i> Reçu
+                            </a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     {% else %}
-        <div class="alert alert-info">Aucun retour enregistré pour le moment.</div>
+        <div class="alert alert-info text-center shadow-sm" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i> Aucun retour enregistré pour le moment.
+        </div>
     {% endif %}
+
 </div>
 {% endblock %}

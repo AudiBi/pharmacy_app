@@ -1,5 +1,6 @@
 from . import db
 from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date
 
 ### UTILISATEURS ###
@@ -12,6 +13,12 @@ class User(UserMixin, db.Model):
 
     sales = db.relationship('Sale', back_populates='user')
 
+    def set_password(self, raw_password):
+        self.password = generate_password_hash(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password_hash(self.password, raw_password)
+    
 ### FOURNISSEURS ###
 class Supplier(db.Model):
     id = db.Column(db.Integer, primary_key=True)

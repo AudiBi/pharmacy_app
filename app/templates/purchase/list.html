@@ -3,66 +3,73 @@
 {% block title %}Liste des Achats{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4">Liste des Achats</h2>
-  <a href="{{ url_for('purchase.new_purchase') }}" class="btn btn-success mb-4">Ajouter un nouvel achat</a>
+<div class="container mt-5">
+  <h2 class="mb-4 text-success fw-bold">🧾 Liste des Achats</h2>
 
-  <form method="get" action="{{ url_for('purchase.list_purchases') }}" class="mb-4">
+  <a href="{{ url_for('purchase.new_purchase') }}" class="btn btn-success mb-4">
+    <i class="bi bi-plus-circle"></i> Ajouter un nouvel achat
+  </a>
+
+  <!-- Formulaire de filtre -->
+  <form method="get" action="{{ url_for('purchase.list_purchases') }}" class="mb-4 border rounded p-3 bg-light shadow-sm">
     <div class="row g-3 align-items-end">
-        <!-- Fournisseur -->
-        <div class="col-md-3">
-            <label for="supplier_id" class="form-label">Fournisseur</label>
-            <select name="supplier_id" class="form-select">
-                <option value="">-- Tous --</option>
-                {% for supplier in suppliers %}
-                    <option value="{{ supplier.id }}" {% if request.args.get('supplier_id') == supplier.id|string %}selected{% endif %}>
-                        {{ supplier.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
+      <!-- Fournisseur -->
+      <div class="col-md-3">
+        <label for="supplier_id" class="form-label">Fournisseur</label>
+        <select name="supplier_id" class="form-select">
+          <option value="">-- Tous --</option>
+          {% for supplier in suppliers %}
+            <option value="{{ supplier.id }}" {% if request.args.get('supplier_id') == supplier.id|string %}selected{% endif %}>
+              {{ supplier.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
 
-        <!-- Médicament -->
-        <div class="col-md-3">
-            <label for="drug_id" class="form-label">Médicament</label>
-            <select name="drug_id" class="form-select">
-                <option value="">-- Tous --</option>
-                {% for drug in drugs %}
-                    <option value="{{ drug.id }}" {% if request.args.get('drug_id') == drug.id|string %}selected{% endif %}>
-                        {{ drug.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
+      <!-- Médicament -->
+      <div class="col-md-3">
+        <label for="drug_id" class="form-label">Médicament</label>
+        <select name="drug_id" class="form-select">
+          <option value="">-- Tous --</option>
+          {% for drug in drugs %}
+            <option value="{{ drug.id }}" {% if request.args.get('drug_id') == drug.id|string %}selected{% endif %}>
+              {{ drug.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
 
-        <!-- Date de début -->
-        <div class="col-md-2">
-            <label for="start_date" class="form-label">Date début</label>
-            <input type="date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}">
-        </div>
+      <!-- Dates -->
+      <div class="col-md-2">
+        <label class="form-label">Date début</label>
+        <input type="date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}">
+      </div>
 
-        <!-- Date de fin -->
-        <div class="col-md-2">
-            <label for="end_date" class="form-label">Date fin</label>
-            <input type="date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}">
-        </div>
+      <div class="col-md-2">
+        <label class="form-label">Date fin</label>
+        <input type="date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}">
+      </div>
 
-        <!-- Bouton -->
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100">Filtrer</button>
-        </div>
+      <!-- Bouton -->
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-funnel-fill"></i> Filtrer
+        </button>
+      </div>
     </div>
   </form>
+
   {% if purchases %}
-    <table class="table table-bordered table-hover">
+  <div class="table-responsive shadow-sm">
+    <table class="table table-bordered table-striped align-middle">
       <thead class="table-light">
         <tr>
           <th>ID Achat</th>
           <th>Fournisseur</th>
-          <th>Médicaments & Quantités</th>
+          <th>Médicament (Qté)</th>
           <th>Prix Unitaire (HTG)</th>
           <th>Coût Total (HTG)</th>
-          <th>Date d'achat</th>
+          <th>Date d'Achat</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -72,27 +79,34 @@
             <td rowspan="{{ purchase.items|length }}">{{ purchase.id }}</td>
             <td rowspan="{{ purchase.items|length }}">{{ purchase.supplier.name }}</td>
             {% for item in purchase.items %}
-              {% if not loop.first %}
-                </tr><tr>
-              {% endif %}
-              <td>{{ item.drug.name }} (Qté: {{ item.quantity }})</td>
+              {% if not loop.first %}</tr><tr>{% endif %}
+              <td>{{ item.drug.name }} <span class="badge bg-secondary">x{{ item.quantity }}</span></td>
               <td>{{ "%.2f"|format(item.unit_price) }}</td>
               <td>{{ "%.2f"|format(item.total_price) }}</td>
               {% if loop.first %}
-                <td rowspan="{{ purchase.items|length }}">{{ purchase.purchase_date.strftime('%d/%m/%Y %H:%M') if purchase.purchase_date else '' }}</td>
-                <td rowspan="{{ purchase.items|length }}">
-                  <a href="{{ url_for('purchase.edit_purchase', purchase_id=purchase.id) }}" class="btn btn-sm btn-primary">Modifier</a>
-                  <form action="{{ url_for('purchase.delete_purchase', purchase_id=purchase.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet achat ?');">Supprimer</button>
+              <td rowspan="{{ purchase.items|length }}">{{ purchase.purchase_date.strftime('%d/%m/%Y %H:%M') if purchase.purchase_date else '-' }}</td>
+              <td rowspan="{{ purchase.items|length }}">
+                <div class="btn-group btn-group-sm" role="group">
+                  <a href="{{ url_for('purchase.edit_purchase', purchase_id=purchase.id) }}" class="btn btn-outline-primary" title="Modifier">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form action="{{ url_for('purchase.delete_purchase', purchase_id=purchase.id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet achat ?');">
+                    <button type="submit" class="btn btn-outline-danger" title="Supprimer">
+                      <i class="bi bi-trash"></i>
+                    </button>
                   </form>
-                  <a href="{{ url_for('purchase.view_purchase', purchase_id=purchase.id) }}" class="btn btn-sm btn-info">Voir</a>
-                </td>
+                  <a href="{{ url_for('purchase.view_purchase', purchase_id=purchase.id) }}" class="btn btn-outline-info" title="Voir les détails">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </div>
+              </td>
               {% endif %}
             {% endfor %}
           </tr>
         {% endfor %}
       </tbody>
     </table>
+  </div>
   {% else %}
     <div class="alert alert-info">Aucun achat enregistré pour le moment.</div>
   {% endif %}

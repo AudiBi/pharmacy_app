@@ -3,43 +3,56 @@
 {% block title %}Pertes de Médicaments{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-3">Liste des pertes</h2>
+<div class="container mt-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-success">Pertes de Médicaments</h2>
+    <a href="#" class="btn btn-outline-success disabled">Exporter</a> <!-- Placeholder export -->
+  </div>
 
   {% if losses %}
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Médicament</th>
-          <th>Quantité perdue</th>
-          <th>Date</th>
-          <th>Motif</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for loss in losses %}
+    <div class="table-responsive shadow-sm rounded">
+      <table class="table table-hover align-middle table-bordered">
+        <thead class="table-primary">
           <tr>
-            <td>{{ loss.drug.name }}</td>
-            <td>{{ loss.quantity }}</td>
-            <td>{{ loss.date.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td>{{ loss.reason }}</td>
+            <th scope="col">Médicament</th>
+            <th scope="col">Quantité perdue</th>
+            <th scope="col">Date</th>
+            <th scope="col">Motif</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for loss in losses %}
+            <tr>
+              <td>{{ loss.drug.name }}</td>
+              <td>{{ loss.quantity }}</td>
+              <td>{{ loss.date.strftime('%d/%m/%Y à %H:%M') }}</td>
+              <td>{{ loss.reason }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% else %}
-    <div class="alert alert-info">Aucune perte enregistrée.</div>
+    <div class="alert alert-info text-center mt-4" role="alert">
+      <i class="bi bi-info-circle me-2"></i> Aucune perte enregistrée.
+    </div>
   {% endif %}
 
-  <ul class="list-group">
-  {% for drug in drugs %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      {{ drug.name }} (stock: {{ drug.current_stock() }} {{ drug.unit }})
-      <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-warning">
-        Ajouter une perte
-      </a>
-    </li>
-  {% endfor %}
-</ul>
+  <hr class="my-5">
+
+  <h4 class="mb-3">Ajouter une perte par médicament</h4>
+  <div class="list-group shadow-sm">
+    {% for drug in drugs %}
+      <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ drug.name }}</strong>
+          <span class="text-muted">— Stock: {{ drug.current_stock() }} {{ drug.unit }}</span>
+        </div>
+        <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-outline-warning">
+          <i class="bi bi-plus-circle me-1"></i> Ajouter une perte
+        </a>
+      </div>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}

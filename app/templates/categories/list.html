@@ -1,88 +1,105 @@
 {% extends 'base.html' %}
+
+{% block title %}Catégories de Médicaments{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2>Catégories de médicaments</h2>
+<div class="container mt-5">
 
-    <a href="{{ url_for('category.add_category') }}" class="btn btn-primary mb-3">+ Ajouter une catégorie</a>
+  <h2 class="mb-4 text-success fw-bold">📂 Catégories de médicaments</h2>
 
-    <form method="get" class="mb-3">
-        <div class="input-group">
-            <input type="text" name="search" class="form-control" placeholder="Rechercher une catégorie..."
-                value="{{ search_query }}">
-            <button class="btn btn-primary" type="submit">🔍 Rechercher</button>
-        </div>
-    </form>
+  <!-- Bouton d'ajout -->
+  <a href="{{ url_for('category.add_category') }}" class="btn btn-success mb-4">
+    <i class="bi bi-plus-circle me-1"></i> Ajouter une catégorie
+  </a>
+
+  <!-- Formulaire de recherche -->
+  <form method="get" class="mb-4">
+    <div class="input-group">
+      <input type="text" name="search" class="form-control" placeholder="🔍 Rechercher une catégorie..." value="{{ search_query }}">
+      <button class="btn btn-outline-primary" type="submit">
+        Rechercher
+      </button>
+    </div>
+  </form>
 
   {% if categories %}
-  <table class="table table-bordered table-hover">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nom</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for category in categories %}
-      <tr>
-        <td>{{ category.id }}</td>
-        <td>{{ category.name }}</td>
-        <td>
-          <a href="{{ url_for('category.edit_category', category_id=category.id) }}" class="btn btn-sm btn-warning">Modifier</a>
-          <!-- Bouton de suppression avec modal -->
-        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ category.id }}">
-          Supprimer
-        </button>
+    <div class="table-responsive shadow-sm rounded">
+      <table class="table table-striped table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th>Nom</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in categories %}
+          <tr>
+            <td>{{ category.id }}</td>
+            <td>{{ category.name }}</td>
+            <td class="text-center">
+              <a href="{{ url_for('category.edit_category', category_id=category.id) }}" class="btn btn-sm btn-warning" title="Modifier">
+                <i class="bi bi-pencil-square"></i>
+              </a>
+              <!-- Supprimer avec modal -->
+              <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ category.id }}" title="Supprimer">
+                <i class="bi bi-trash"></i>
+              </button>
 
-        <!-- Modal Bootstrap de confirmation -->
-        <div class="modal fade" id="deleteModal{{ category.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ category.id }}" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <form method="POST" action="{{ url_for('category.delete_category', category_id=category.id) }}">
-                {{ delete_form_category.csrf_token }}
-                <div class="modal-header">
-                  <h5 class="modal-title" id="deleteModalLabel{{ category.id }}">Confirmer la suppression</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+              <!-- Modal de suppression -->
+              <div class="modal fade" id="deleteModal{{ category.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ category.id }}" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <form method="POST" action="{{ url_for('category.delete_category', category_id=category.id) }}">
+                      {{ delete_form_category.csrf_token }}
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="deleteModalLabel{{ category.id }}">Confirmation</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                      </div>
+                      <div class="modal-body">
+                        Êtes-vous sûr de vouloir supprimer la catégorie <strong>{{ category.name }}</strong> ?
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non</button>
+                        <button type="submit" class="btn btn-danger">Oui</button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
-                <div class="modal-body">
-                  Êtes-vous sûr de vouloir supprimer cette catégorie <strong>{{ category.name }}</strong> ?
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non</button>
-                  <button type="submit" class="btn btn-danger">Oui</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <nav aria-label="Pagination">
-    <ul class="pagination">
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Pagination" class="mt-4">
+      <ul class="pagination justify-content-center">
         {% if pagination.has_prev %}
-        <li class="page-item">
+          <li class="page-item">
             <a class="page-link" href="?page={{ pagination.prev_num }}&search={{ search_query }}">← Précédent</a>
-        </li>
+          </li>
         {% else %}
-        <li class="page-item disabled"><span class="page-link">← Précédent</span></li>
+          <li class="page-item disabled"><span class="page-link">← Précédent</span></li>
         {% endif %}
 
-        <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} / {{ pagination.pages }}</span></li>
+        <li class="page-item disabled">
+          <span class="page-link">Page {{ pagination.page }} / {{ pagination.pages }}</span>
+        </li>
 
         {% if pagination.has_next %}
-        <li class="page-item">
+          <li class="page-item">
             <a class="page-link" href="?page={{ pagination.next_num }}&search={{ search_query }}">Suivant →</a>
-        </li>
+          </li>
         {% else %}
-        <li class="page-item disabled"><span class="page-link">Suivant →</span></li>
+          <li class="page-item disabled"><span class="page-link">Suivant →</span></li>
         {% endif %}
-    </ul>
-  </nav>
+      </ul>
+    </nav>
   {% else %}
-    <div class="alert alert-info">Aucune catégorie enregistrée.</div>
+    <div class="alert alert-info">Aucune catégorie enregistrée pour le moment.</div>
   {% endif %}
 </div>
 {% endblock %}

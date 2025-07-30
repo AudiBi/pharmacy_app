@@ -71,6 +71,9 @@
                         <a href="{{ url_for('sale.sale_receipt', sale_id=sale.id) }}" class="btn btn-warning" title="Réimprimer" target="_blank">
                             <i class="bi bi-printer-fill"></i>
                         </a>
+                        <a href="{{ url_for('sale.return_item', sale_item_id=item.id) }}" class="btn btn-secondary" title="Retour" target="_blank">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>
+                        </a>
                     </div>
                 </td>
             </tr>

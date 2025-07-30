@@ -233,7 +233,7 @@ def return_item(sale_item_id):
             flash("Quantité doit être supérieure à 0.", "danger")
             return redirect(request.url)
 
-        if qty_returned > sale_item.net_quantity_sold():
+        if qty_returned > sale_item.net_quantity_sold:
             flash("Retour dépasse la quantité vendue restante.", "danger")
             return redirect(request.url)
 
@@ -256,3 +256,14 @@ def return_item(sale_item_id):
 def list_returns():
     returns = ReturnRecord.query.order_by(ReturnRecord.date.desc()).limit(100).all()
     return render_template('sales/returns.html', returns=returns)
+
+
+@bp.route('/return-receipt/<int:return_id>')
+@login_required
+def return_receipt(return_id):
+    return_record = ReturnRecord.query.options(
+        joinedload(ReturnRecord.sale_item).joinedload(SaleItem.drug),
+        joinedload(ReturnRecord.sale_item).joinedload(SaleItem.sale)
+    ).get_or_404(return_id)
+
+    return render_template('sales/return_receipt.html', return_record=return_record)

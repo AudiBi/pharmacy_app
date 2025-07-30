@@ -3,71 +3,90 @@
 {% block title %}Liste des Médicaments{% endblock %}
 
 {% block content %}
-<h2 class="mt-4">💊 Liste des médicaments</h2>
+<div class="container mt-5">
 
-<a href="{{ url_for('drug.add_drug') }}" class="btn btn-primary mb-3">➕ Ajouter un médicament</a>
+  <!-- Titre avec emoji, couleur et marge -->
+  <h2 class="mb-4 text-success fw-bold">💊 Liste des médicaments</h2>
 
-<form method="GET" class="mb-4 row g-3 align-items-end">
-  <div class="col-md-4">
-    <label for="category" class="form-label">Filtrer par catégorie :</label>
-    <select name="category" id="category" class="form-select" onchange="this.form.submit()">
-      <option value="">-- Toutes les catégories --</option>
-      {% for category in categories %}
-        <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
-          {{ category.name }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
+  <!-- Bouton d'ajout -->
+  <a href="{{ url_for('drug.add_drug') }}" class="btn btn-success mb-4">
+    <i class="bi bi-plus-circle me-1"></i> Ajouter un médicament
+  </a>
 
-  <div class="col-md-4">
-    <div class="form-check mt-4">
-      <input class="form-check-input" type="checkbox" name="expiring_soon" id="expiring_soon"
-             value="1" {% if expiring_soon %}checked{% endif %} onchange="this.form.submit()">
-      <label class="form-check-label" for="expiring_soon">
-        Bientôt périmés (30 jours)
-      </label>
+  <!-- Formulaire filtre -->
+  <form method="GET" class="mb-4 row g-3 align-items-end">
+    <div class="col-md-4">
+      <label for="category" class="form-label fw-semibold">Filtrer par catégorie :</label>
+      <select name="category" id="category" class="form-select" onchange="this.form.submit()">
+        <option value="">-- Toutes les catégories --</option>
+        {% for category in categories %}
+          <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+            {{ category.name }}
+          </option>
+        {% endfor %}
+      </select>
     </div>
-  </div>
 
-  <div class="col-md-4 d-flex gap-2 mt-4">
-    <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-secondary">Réinitialiser</a>
-  </div>
-</form>
+    <div class="col-md-4">
+      <div class="form-check mt-4">
+        <input class="form-check-input" type="checkbox" name="expiring_soon" id="expiring_soon"
+               value="1" {% if expiring_soon %}checked{% endif %} onchange="this.form.submit()">
+        <label class="form-check-label fw-semibold" for="expiring_soon">
+          Bientôt périmés (30 jours)
+        </label>
+      </div>
+    </div>
 
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>Nom</th>
-      <th>Quantité</th>
-      <th>Prix</th>
-      <th>Unité</th>
-      <th>Expiration</th>
-      <th>Catégorie</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for drug in drugs %}
-      <tr class="{% if drug.will_expire_soon(30) %}table-warning{% endif %}">
-        <td>{{ drug.name }}</td>
-        <td>{{ drug.current_stock() }}</td>
-        <td>{{ "%.2f"|format(drug.price) }} HTG</td>
-        <td>{{ drug.unit }}</td>
-        <td>{{ drug.expiration_date.strftime('%d/%m/%Y') }}</td>
-        <td>{{ drug.category.name }}</td>
-        <td>
-          <a href="{{ url_for('drug.edit_drug', drug_id=drug.id) }}" class="btn btn-sm btn-warning">Modifier</a>
-          <a href="{{ url_for('drug.drug_history', drug_id=drug.id) }}" class="btn btn-sm btn-info">Historique</a>
-          <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-secondary">Ajouter perte</a>
-          {% if drug.current_stock() == 0 %}
-           <!-- Bouton de suppression avec modal -->
-          <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ drug.id }}">
-            Supprimer
-          </button>
-          {% endif %}
+    <div class="col-md-4 d-flex gap-2 mt-4">
+      <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
+      </a>
+    </div>
+  </form>
 
-          <!-- Modal Bootstrap de confirmation -->
+  <!-- Tableau médicaments -->
+  <div class="table-responsive shadow-sm rounded">
+    <table class="table table-striped table-hover align-middle">
+      <thead class="table-success">
+        <tr>
+          <th>Nom</th>
+          <th class="text-center">Quantité</th>
+          <th class="text-end">Prix</th>
+          <th>Unité</th>
+          <th>Expiration</th>
+          <th>Catégorie</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for drug in drugs %}
+          <tr class="{% if drug.will_expire_soon(30) %}table-warning{% endif %}">
+            <td>{{ drug.name }}</td>
+            <td class="text-center">{{ drug.current_stock() }}</td>
+            <td class="text-end">{{ "%.2f"|format(drug.price) }} HTG</td>
+            <td>{{ drug.unit }}</td>
+            <td>{{ drug.expiration_date.strftime('%d/%m/%Y') }}</td>
+            <td>{{ drug.category.name }}</td>
+            <td class="text-center">
+              <a href="{{ url_for('drug.edit_drug', drug_id=drug.id) }}" class="btn btn-sm btn-warning" title="Modifier">
+                <i class="bi bi-pencil-square"></i>
+              </a>
+              <a href="{{ url_for('drug.drug_history', drug_id=drug.id) }}" class="btn btn-sm btn-info" title="Historique">
+                <i class="bi bi-clock-history"></i>
+              </a>
+              <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-secondary" title="Ajouter perte">
+                <i class="bi bi-plus-square"></i>
+              </a>
+              {% if drug.current_stock() == 0 %}
+                <!-- Bouton suppression avec modal -->
+                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ drug.id }}" title="Supprimer">
+                  <i class="bi bi-trash"></i>
+                </button>
+              {% endif %}
+            </td>
+          </tr>
+
+          <!-- Modal de confirmation suppression -->
           <div class="modal fade" id="deleteModal{{ drug.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ drug.id }}" aria-hidden="true">
             <div class="modal-dialog">
               <div class="modal-content">
@@ -88,11 +107,13 @@
               </div>
             </div>
           </div>
-        </td>
-      </tr>
-    {% else %}
-      <tr><td colspan="6" class="text-center">Aucun médicament trouvé.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+        {% else %}
+          <tr>
+            <td colspan="7" class="text-center fst-italic text-muted">Aucun médicament trouvé.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

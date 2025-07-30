@@ -36,7 +36,7 @@
                                 <input type="text" class="form-control item-total" readonly>
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" class="btn btn-danger btn-remove-item w-100">🗑 Supprimer</button>
+                                <button type="button" class="btn btn-danger btn-remove-item w-100">Supprimer</button>
                             </div>
                         </div>
                     </div>
@@ -44,7 +44,6 @@
                 </div>
                 <div class="d-flex align-items-center">
                     <button type="button" id="add-item" class="btn btn-outline-primary me-2">➕ Ajouter un médicament</button>
-                    {{ form.submit(class="btn btn-success") }}
                 </div>
                 <hr>
                 <h5>Informations de paiement</h5>
@@ -62,7 +61,9 @@
                     <h5>Total général : <span id="grand-total">0.00</span> HTG</h5>
                 </div>
 
-                
+                <div class="d-flex align-items-center">
+                    {{ form.submit(class="btn btn-success") }}
+                </div>
             </form>
         </div>
     </div>

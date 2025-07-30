@@ -1,87 +1,63 @@
 {% extends "base.html" %}
-
 {% block title %}Vendeur Dashboard - Pharmacie{% endblock %}
 
 {% block content %}
-<h1>Dashboard Vendeur</h1>
+<h1>Tableau de bord du Vendeur</h1>
 
-<div class="alert alert-info">
-  Bienvenue {{ current_user.username }}. Voici les statistiques clés :
-</div>
-
-<div class="row">
+<div class="row mb-4">
+  <!-- Ventes du jour -->
   <div class="col-md-6">
-    <div class="card border-success mb-3">
-      <div class="card-header">Ventes du jour</div>
-      <div class="card-body text-success">
-        <h5 class="card-title">{{ ventes_du_jour }}</h5>
+    <div class="card text-white bg-success mb-3">
+      <div class="card-header"><i class="fas fa-cash-register"></i> Quantités vendues aujourd’hui</div>
+      <div class="card-body">
+        <h5 class="card-title">{{ ventes_du_jour }} unités vendues</h5>
+      </div>
+    </div>
+  </div>
+
+  <!-- Produits en alerte -->
+  <div class="col-md-6">
+    <div class="card text-white bg-warning mb-3">
+      <div class="card-header"><i class="fas fa-exclamation-triangle"></i> Alertes</div>
+      <div class="card-body" id="alerts">
+        {% if alerts %}
+          {% for alert in alerts %}
+            <div class="alert alert-warning">{{ alert }}</div>
+          {% endfor %}
+        {% else %}
+          <div>Aucune alerte</div>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-<h3>Top 5 des médicaments les plus vendus</h3>
-<ul>
-  {% for drug in top_selling_drugs %}
-    <li>{{ drug.name }} - {{ drug.total_sold }} unités</li>
-  {% else %}
-    <li>Aucun médicament vendu récemment.</li>
-  {% endfor %}
-</ul>
+<!-- Médicaments proches de la péremption -->
+<div class="card text-white bg-danger mb-4">
+  <div class="card-header"><i class="fas fa-calendar-alt"></i> Médicaments proches de la péremption</div>
+  <div class="card-body">
+    <ul class="list-unstyled mb-0">
+      {% for drug, days_left in near_expiry %}
+        <li><strong>{{ drug.name }}</strong> - expire dans {{ days_left }} jours</li>
+      {% else %}
+        <li>Aucun produit proche de la péremption</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
 
-<hr />
+<!-- Top 5 Médicaments -->
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-pills"></i> Top 5 Médicaments les plus vendus</div>
+  <div class="card-body">
+    <ol>
+      {% for drug_name, qty in top5_meds %}
+        <li>{{ drug_name }} - {{ qty }} ventes</li>
+      {% else %}
+        <li>Aucune donnée disponible</li>
+      {% endfor %}
+    </ol>
+  </div>
+</div>
 
-<h3>Ventes en temps réel</h3>
-<canvas id="realtimeSalesChart" height="100"></canvas>
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-  const ctx = document.getElementById('realtimeSalesChart').getContext('2d');
-
-  const labels = [];
-  const data = [];
-
-  const config = {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Ventes (€) en temps réel',
-        data: data,
-        borderColor: 'rgba(40, 167, 69, 1)',
-        backgroundColor: 'rgba(40, 167, 69, 0.2)',
-        fill: true,
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
-  };
-
-  const realtimeChart = new Chart(ctx, config);
-
-  // Connexion Socket.IO
-  const socket = io();
-
-  socket.on('new_sale', function(sale) {
-    const time = sale.time;
-    const totalPrice = sale.total_price;
-
-    // Limite la taille des données pour garder le graphique lisible
-    if (labels.length > 20) {
-      labels.shift();
-      data.shift();
-    }
-    labels.push(time);
-    data.push(totalPrice);
-    realtimeChart.update();
-  });
-</script>
 {% endblock %}

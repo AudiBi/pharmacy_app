@@ -45,11 +45,18 @@ def list_categories():
 def add_category():
     form = CategoryForm()
     if form.validate_on_submit():
-        category = Category(name=form.name.data)
+        # Vérifier si la catégorie existe déjà (insensible à la casse si nécessaire)
+        existing_category = Category.query.filter_by(name=form.name.data.strip()).first()
+        if existing_category:
+            flash("Cette catégorie existe déjà.", "warning")
+            return render_template('categories/add.html', form=form)
+
+        category = Category(name=form.name.data.strip())
         db.session.add(category)
         db.session.commit()
         flash("Catégorie ajoutée avec succès.", "success")
         return redirect(url_for('category.list_categories'))
+
     return render_template('categories/add.html', form=form)
 
 @bp.route('/categories/<int:category_id>/edit', methods=['GET', 'POST'])

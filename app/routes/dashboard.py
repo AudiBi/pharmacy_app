@@ -1,22 +1,17 @@
 from collections import defaultdict
-from flask import Blueprint, redirect, render_template, flash, url_for, request
+from flask import Blueprint, redirect, render_template, flash, url_for
 from flask_login import login_required, current_user
-from markupsafe import Markup
-from app.models import Drug, Supplier, Sale
-from datetime import date, timedelta, datetime
+from sqlalchemy import extract, func
 from sqlalchemy.orm import joinedload
-from app import socketio
+from app.models import Drug, Payment, Purchase, ReturnRecord, SaleItem, Supplier, Sale, LossRecord
+from datetime import date, timedelta, datetime
+from app import socketio, db
 import random
 
 bp = Blueprint('dashboard', __name__)
 
-# Stockage temporaire (exemple)
-sales = []
 alerts = []
 LOW_STOCK_THRESHOLD = 5
-
-def get_current_stock(drug_name):
-    return random.randint(0, 10)  # Simule le stock restant
 
 def add_alert(msg):
     alerts.append(msg)
@@ -25,21 +20,17 @@ def add_alert(msg):
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    # Exemple : calcul du stock total
     total_stock = sum(drug.current_stock() for drug in Drug.query.all())
 
-    # Plage de temps aujourd'hui
     today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
     today_end = today_start + timedelta(days=1)
 
-    # Récupérer toutes les ventes du jour avec leurs items
-    sales = Sale.query.options(joinedload(Sale.items))\
+    # Ventes du jour (Quantité)
+    sales_today = Sale.query.options(joinedload(Sale.items))\
         .filter(Sale.date >= today_start, Sale.date < today_end).all()
+    ventes_du_jour = sum(item.quantity for sale in sales_today for item in sale.items)
 
-    # Quantité totale vendue aujourd'hui
-    ventes_du_jour = sum(item.quantity for sale in sales for item in sale.items)
-
-    # Exemple récupération des produits proches de péremption (< 30 jours)
+    # Produits proches de péremption
     today = datetime.utcnow().date()
     near_expiry = []
     for drug in Drug.query.all():
@@ -49,30 +40,73 @@ def dashboard():
                 near_expiry.append((drug, days_left))
     near_expiry.sort(key=lambda x: x[1])
 
-    # Exemple top 5 médicaments les plus vendus (par quantité)
-    sales_count = defaultdict(int)
-    
-    sales = Sale.query.all()
-    for sale in sales:
+    # Achats du jour
+    purchases_today = Purchase.query.filter(Purchase.purchase_date >= today_start,
+                                            Purchase.purchase_date < today_end).all()
+    ca_achats = sum(p.total_amount for p in purchases_today)
+
+    ca_ventes = sum(sale.total_amount for sale in sales_today)
+    # Paiements du jour
+    payments_today = Payment.query.filter(Payment.payment_date >= today_start,
+                                          Payment.payment_date < today_end).all()
+    ca_payments = sum(p.amount_paid for p in payments_today)
+
+    # Retours du jour
+    returns_today = (db.session.query(func.sum(ReturnRecord.quantity * SaleItem.unit_price))
+                     .join(SaleItem, ReturnRecord.sale_item_id == SaleItem.id)
+                     .join(Sale, SaleItem.sale_id == Sale.id)
+                     .filter(Sale.date >= today_start, Sale.date < today_end)
+                     .scalar() or 0)
+
+    # Pertes du jour
+    loss_today = (db.session.query(func.sum(LossRecord.quantity))
+                  .filter(LossRecord.date >= today_start, LossRecord.date < today_end)
+                  .scalar() or 0)
+
+    # Top 5 médicaments les plus vendus
+    top5_meds = defaultdict(int)
+    all_sales = Sale.query.options(joinedload(Sale.items)).all()
+    for sale in all_sales:
         for item in sale.items:
-            sales_count[item.drug.name] += item.quantity
-    top5_meds = sorted(sales_count.items(), key=lambda x: x[1], reverse=True)[:5]
+            top5_meds[item.drug.name] += item.quantity
+    top5_meds = sorted(top5_meds.items(), key=lambda x: x[1], reverse=True)[:5]
 
-    # Calcul chiffre d'affaires par heure (regroupé)
+    # Chiffre d'affaires cumulé par heure
     ca_par_heure = defaultdict(float)
-    for sale in sales:
+    for sale in all_sales:
         heure = sale.date.replace(minute=0, second=0, microsecond=0)
-        ca_par_heure[heure] += sale.total_amount  # Vérifie que total_amount existe
-
+        ca_par_heure[heure] += sale.total_amount
     heures_tries = sorted(ca_par_heure.keys())
-
-    # Préparer labels et données cumulées pour le graphique
     labels = [h.strftime("%H:%M") for h in heures_tries]
     cumul = 0
     data = []
     for h in heures_tries:
         cumul += ca_par_heure[h]
         data.append(cumul)
+
+    # Ventes hebdomadaires (unités & CA)
+    today = datetime.utcnow()
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=7)
+    results = (
+        Sale.query
+        .join(Sale.items)
+        .with_entities(
+            extract('dow', Sale.date).label('day_of_week'),
+            func.sum(SaleItem.quantity).label('total_units'),
+            func.sum(SaleItem.quantity * SaleItem.unit_price).label('total_revenue')
+        )
+        .filter(Sale.date >= start_of_week, Sale.date < end_of_week)
+        .group_by('day_of_week')
+        .all()
+    )
+    weekly_sales = [0] * 7
+    weekly_revenue = [0.0] * 7
+    for day, units, revenue in results:
+        index = (int(day) - 1) % 7
+        weekly_sales[index] = int(units)
+        weekly_revenue[index] = float(revenue)
+    weekly_labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
     common_data = dict(
         total_stock=total_stock,
@@ -81,8 +115,15 @@ def dashboard():
         sales_labels=labels,
         sales_data=data,
         near_expiry=near_expiry,
-        top5_meds=top5_meds
-
+        top5_meds=top5_meds,
+        weekly_sales_labels=weekly_labels,
+        weekly_sales_data=weekly_sales,
+        weekly_revenue_data=weekly_revenue,
+        ca_achats=ca_achats,
+        ca_ventes=ca_ventes,
+        ca_payments=ca_payments,
+        returns_today=returns_today,
+        loss_today=loss_today
     )
 
     if current_user.role == 'admin':
@@ -94,6 +135,3 @@ def dashboard():
     else:
         flash("Rôle inconnu ou non autorisé", "danger")
         return redirect(url_for('logout'))
-
-
-

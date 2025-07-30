@@ -1,145 +1,158 @@
 {% extends "base.html" %}
-
-{% block title %}Dashboard Admin{% endblock %}
-
-{% block head %}
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- Socket.IO client -->
-<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
-<!-- Font Awesome -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-<style>
-  #alerts {
-    max-height: 150px;
-    overflow-y: auto;
-  }
-  .alert-item {
-    padding: 0.3rem 0.5rem;
-    border-bottom: 1px solid #ddd;
-  }
-</style>
-{% endblock %}
+{% block title %}Admin Dashboard - Pharmacie{% endblock %}
 
 {% block content %}
-<div class="container my-4">
-  <h1 class="mb-4">Dashboard Admin</h1>
+<h1 class="mb-4">Tableau de bord Administrateur</h1>
 
-  <div class="row mb-4">
-    <!-- Stock total -->
-    <div class="col-md-3">
-      <div class="card text-white bg-primary mb-3">
-        <div class="card-header"><i class="fas fa-boxes"></i> Stock total</div>
-        <div class="card-body">
-          <h5 class="card-title">{{ total_stock }} Médicaments</h5>
-        </div>
-      </div>
-    </div>
-
-    <!-- Ventes du jour -->
-    <div class="col-md-3">
-      <div class="card text-white bg-success mb-3">
-        <div class="card-header"><i class="fas fa-cash-register"></i> Ventes du jour</div>
-        <div class="card-body">
-          <h5 class="card-title">{{ ventes_du_jour }} médicaments vendus</h5>
-        </div>
-      </div>
-    </div>
-
-    <!-- Alertes -->
-    <div class="col-md-3">
-      <div class="card text-white bg-warning mb-3">
-        <div class="card-header"><i class="fas fa-exclamation-triangle"></i> Alertes</div>
-        <div class="card-body" id="alerts">
-          {% if alerts %}
-            {% for alert in alerts %}
-            <div class="alert-item alert alert-warning" role="alert">{{ alert }}</div>
-            {% endfor %}
-          {% else %}
-            <div>Aucune alerte</div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    <!-- Produits proches de la date de péremption -->
-    <div class="col-md-3">
-      <div class="card text-white bg-danger mb-3">
-        <div class="card-header"><i class="fas fa-calendar-times"></i> Prochaines péremptions</div>
-        <div class="card-body">
-          <ul class="list-unstyled mb-0">
-            {% for drug, days_left in near_expiry %}
-              <li>
-                <strong>{{ drug.name }}</strong> - expire dans {{ days_left }} jours
-              </li>
-            {% else %}
-              <li>Aucun produit proche de la péremption</li>
-            {% endfor %}
-          </ul>
-        </div>
+<div class="row mb-4">
+  <!-- Stock total -->
+  <div class="col-md-3">
+    <div class="card text-white bg-primary mb-3">
+      <div class="card-header"><i class="fas fa-boxes"></i> Stock total</div>
+      <div class="card-body">
+        <h5 class="card-title">{{ total_stock }} médicaments</h5>
       </div>
     </div>
   </div>
 
-  <!-- Top 5 Médicaments -->
-  <div class="card mb-4">
-    <div class="card-header"><i class="fas fa-pills"></i> Top 5 Médicaments les plus vendus</div>
-    <div class="card-body">
-      <ol>
-        {% for drug_name, qty in top5_meds %}
-          <li>{{ drug_name }} - {{ qty }} ventes</li>
-        {% else %}
-          <li>Aucune donnée disponible</li>
-        {% endfor %}
-      </ol>
+  <!-- Ventes du jour -->
+  <div class="col-md-3">
+    <div class="card text-white bg-success mb-3">
+      <div class="card-header"><i class="fas fa-cash-register"></i> Quantités vendues aujourd’hui</div>
+      <div class="card-body">
+        <h5 class="card-title">{{ ventes_du_jour }} unités vendues</h5>
+      </div>
     </div>
   </div>
 
-
-  <!-- Card Graphique -->
-  <div class="card">
-    <div class="card-header">📊 Chiffre d'affaires cumulé par heure</div>
+  <div class="col-md-3">
+  <div class="card text-white bg-info mb-3">
+    <div class="card-header"><i class="fas fa-file-invoice-dollar"></i> Ventes encaissées du jour</div>
     <div class="card-body">
-      <canvas id="salesChart" width="400" height="200"></canvas>
+      <h5 class="card-title">{{ "%.2f"|format(ca_ventes)  }} HTG</h5>
     </div>
   </div>
 </div>
-<script id="sales-data" type="application/json">
-{
-  "labels": {{ sales_labels | tojson | safe }},
-  "data": {{ sales_data | tojson | safe }}
-}
-</script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chiffre d'affaires -->
+  <div class="col-md-3">
+    <div class="card text-white bg-info mb-3">
+      <div class="card-header"><i class="fas fa-dollar-sign"></i> Paiements reçus aujourd’hui</div>
+      <div class="card-body">
+        <h5 class="card-title">{{ "%.2f"|format(ca_payments) }} HTG</h5>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="row mb-4">
+  <!-- Achats du jour -->
+  <div class="col-md-3">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-header"><i class="fas fa-shopping-cart"></i> Achats du jour</div>
+      <div class="card-body">
+        <h5 class="card-title">{{ "%.2f"|format(ca_achats) }} HTG</h5>
+      </div>
+    </div>
+  </div>
+  <!-- Retours du jour -->
+  <div class="col-md-3">
+    <div class="card text-white bg-dark mb-3">
+      <div class="card-header"><i class="fas fa-undo"></i> Retours du jour</div>
+      <div class="card-body">
+        <h5 class="card-title">{{ "%.2f"|format(returns_today) }} HTG</h5>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertes -->
+  <div class="col-md-3">
+    <div class="card text-white bg-warning mb-3">
+      <div class="card-header"><i class="fas fa-exclamation-triangle"></i> Alertes</div>
+      <div class="card-body" id="alerts">
+        {% if alerts %}
+          {% for alert in alerts %}
+          <div class="alert-item alert alert-warning" role="alert">{{ alert }}</div>
+          {% endfor %}
+        {% else %}
+          <div>Aucune alerte</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Prochaines péremptions -->
+  <div class="col-md-3">
+    <div class="card text-white bg-danger mb-3">
+      <div class="card-header"><i class="fas fa-calendar-times"></i> Prochaines péremptions</div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0">
+          {% for drug, days_left in near_expiry %}
+            <li><strong>{{ drug.name }}</strong> - dans {{ days_left }} jours</li>
+          {% else %}
+            <li>Aucune alerte de péremption</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top 5 Médicaments -->
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-star"></i> Top 5 Médicaments les plus vendus</div>
+  <div class="card-body">
+    <ol>
+      {% for drug_name, qty in top5_meds %}
+        <li>{{ drug_name }} - {{ qty }} ventes</li>
+      {% else %}
+        <li>Aucune donnée disponible</li>
+      {% endfor %}
+    </ol>
+  </div>
+</div>
+
+<hr />
+<canvas id="unitsChart" class="mt-4"></canvas>
+<canvas id="revenueChart" class="mt-4"></canvas>
+
+{% endblock %}
+
+{% block scripts %}
 <script>
-  // Récupération des données JSON dans le DOM
-  const jsonData = JSON.parse(document.getElementById('sales-data').textContent);
-  const salesLabels = jsonData.labels;
-  const salesData = jsonData.data;
+const labels = {{ weekly_sales_labels|tojson }};
+const unitsData = {{ weekly_sales_data|tojson }};
+const revenueData = {{ weekly_revenue_data|tojson }};
 
-  const ctx = document.getElementById('salesChart').getContext('2d');
-  const salesChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-          labels: salesLabels,
-          datasets: [{
-              label: "Chiffre d'affaires (HTG)",
-              data: salesData,
-              borderColor: 'rgba(54, 162, 235, 1)',
-              backgroundColor: 'rgba(54, 162, 235, 0.2)',
-              fill: true,
-              tension: 0.3
-          }]
-      },
-      options: {
-          responsive: true,
-          scales: {
-              x: { title: { display: true, text: 'Heure' } },
-              y: { title: { display: true, text: 'Montant (HTG)' }, beginAtZero: true }
-          }
-      }
-  });
+new Chart(document.getElementById('unitsChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Unités vendues cette semaine',
+      data: unitsData,
+      backgroundColor: 'rgba(40, 167, 69, 0.7)',
+      borderRadius: 5
+    }]
+  },
+  options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('revenueChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Chiffre d\'affaires (HTG)',
+      data: revenueData,
+      borderColor: 'rgba(0, 123, 255, 0.8)',
+      backgroundColor: 'rgba(0, 123, 255, 0.2)',
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
 </script>
-
 {% endblock %}

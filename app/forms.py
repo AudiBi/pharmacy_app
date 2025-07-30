@@ -17,13 +17,17 @@ class UserForm(FlaskForm):
 class DeleteUserForm(FlaskForm):
     pass
 class PasswordChangeForm(FlaskForm):
-    current_password = PasswordField("Mot de passe actuel", validators=[InputRequired()])
+    current_password = PasswordField("Mot de passe actuel", validators=[
+        InputRequired(message="Veuillez entrer votre mot de passe actuel.")
+    ])
     new_password = PasswordField("Nouveau mot de passe", validators=[
-        InputRequired(),
-        Length(min=6),
+        InputRequired(message="Veuillez entrer un nouveau mot de passe."),
+        Length(min=6, message="Le mot de passe doit contenir au moins 6 caractères."),
         EqualTo('confirm_password', message="Les mots de passe ne correspondent pas.")
     ])
-    confirm_password = PasswordField("Confirmer le nouveau mot de passe", validators=[InputRequired()])
+    confirm_password = PasswordField("Confirmer le nouveau mot de passe", validators=[
+        InputRequired(message="Veuillez confirmer le mot de passe.")
+    ])
     submit = SubmitField("Changer le mot de passe")
 class DrugForm(FlaskForm):
     name = StringField('Nom du médicament', validators=[DataRequired()])
