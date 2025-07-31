@@ -1,8 +1,12 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from io import BytesIO
+from sqlalchemy.orm import joinedload
+from math import ceil
+from flask import Blueprint, render_template, redirect, send_file, url_for, flash, request, abort
 from flask_login import login_required, current_user
-from app.models import Category, Drug, LossRecord
+import pandas as pd
+from app.models import Category, Drug, LossRecord, PurchaseItem, Sale, SaleItem
 from app.forms import DeleteDrugForm, DrugForm, LossForm
 from app import db
 from app.routes.supplier import staff_required
@@ -149,6 +153,8 @@ def new_loss(drug_id):
 @login_required
 @admin_required
 def list_losses():
+    page = request.args.get('page', 1, type=int)
+
     # Récupération des paramètres GET
     drug_id = request.args.get('drug_id')
     start_date = request.args.get('start_date')
@@ -177,19 +183,22 @@ def list_losses():
         except ValueError:
             pass
 
-    # Exécuter la requête triée par date décroissante
-    losses = query.order_by(LossRecord.date.desc()).all()
+    # Trier par date décroissante + appliquer la pagination
+    paginated_losses = query.order_by(LossRecord.date.desc()).paginate(page=page, per_page=10)
+
+    # Pour le graphique et le total, on utilise les éléments paginés seulement
+    losses_on_page = paginated_losses.items
 
     # Récupérer la liste des médicaments pour le filtre
     drugs = Drug.query.order_by(Drug.name).all()
 
     # Calcul du total des quantités perdues
-    total_quantity = sum(loss.quantity for loss in losses)
+    total_quantity = sum(loss.quantity for loss in losses_on_page)
 
     # Données pour le graphique : pertes par jour
     chart_data = defaultdict(int)
 
-    for loss in losses:
+    for loss in losses_on_page:
         key = loss.date.strftime('%Y-%m-%d')
         chart_data[key] += loss.quantity
 
@@ -197,19 +206,172 @@ def list_losses():
     labels = sorted(chart_data.keys())
     quantities = [chart_data[date] for date in labels]
 
-    return render_template('drugs/losses_list.html', losses=losses, drugs=drugs, total_quantity=total_quantity, chart_labels=labels,
+    return render_template('drugs/losses_list.html', losses=losses_on_page, drugs=drugs, total_quantity=total_quantity, chart_labels=labels,
     chart_data=quantities)
 
+@bp.route('/losses/export_excel')
+@login_required
+def export_losses():
+    # Récupération des filtres GET
+    drug_id = request.args.get('drug_id', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    # Requête de base
+    query = LossRecord.query
+
+    # Filtres
+    if drug_id:
+        query = query.filter(LossRecord.drug_id == drug_id)
+    if start_date:
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(LossRecord.date >= start)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+            end = end.replace(hour=23, minute=59, second=59)
+            query = query.filter(LossRecord.date <= end)
+        except ValueError:
+            pass
+
+    losses = query.order_by(LossRecord.date.desc()).all()
+
+    # Format des données pour Excel
+    data = [{
+        "Médicament": loss.drug.name if loss.drug else '',
+        "Quantité perdue": loss.quantity,
+        "Date de perte": loss.date.strftime('%d/%m/%Y %H:%M'),
+        "Motif": loss.reason or '',
+        "Commentaire": loss.comment or ''
+    } for loss in losses]
+
+    df = pd.DataFrame(data)
+
+    # Création du fichier Excel
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Pertes', index=False)
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='pertes_filtrees.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+@bp.route('/drugs/export_excel')
+@login_required
+def export_excel():
+    category_id = request.args.get("category", type=int)
+    expiring_soon = request.args.get("expiring_soon") == "1"
+
+    # Base query
+    query = Drug.query
+
+    if category_id:
+        query = query.filter_by(category_id=category_id)
+
+    if expiring_soon:
+        query = query.filter(Drug.expiration_date <= datetime.utcnow() + timedelta(days=30))
+
+    drugs = query.all()
+
+    # Préparer les données
+    data = [{
+        "Nom": drug.name,
+        "Quantité": drug.current_stock(),
+        "Prix (HTG)": round(drug.price, 2),
+        "Unité": drug.unit,
+        "Expiration": drug.expiration_date.strftime('%d/%m/%Y'),
+        "Catégorie": drug.category.name if drug.category else ''
+    } for drug in drugs]
+
+    df = pd.DataFrame(data)
+
+    # Générer le fichier Excel en mémoire
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Médicaments')
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name='liste_medicaments.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 @bp.route('/drug/<int:drug_id>/history')
 @login_required
 @staff_required
 def drug_history(drug_id):
-    drug = Drug.query.get_or_404(drug_id)
-    purchases = [item for item in drug.purchase_items]
-    sales = drug.sales
-    losses = drug.losses
-    return render_template('drugs/history.html', drug=drug, purchases=purchases, sales=sales, losses=losses)
+    drug = Drug.query.options(
+        joinedload(Drug.purchase_items).joinedload(PurchaseItem.purchase),
+        joinedload(Drug.sales).joinedload(SaleItem.sale),
+        joinedload(Drug.losses)
+    ).get_or_404(drug_id)
+
+    # Récupération des pages dans les requêtes
+    page_purchases = request.args.get('page_purchases', 1, type=int)
+    page_sales = request.args.get('page_sales', 1, type=int)
+    page_losses = request.args.get('page_losses', 1, type=int)
+
+    per_page = 5  # nombre d’éléments par page
+
+    ### ACHATS ###
+    all_purchases = sorted(
+        drug.purchase_items,
+        key=lambda x: x.purchase.purchase_date,
+        reverse=True
+    )
+    total_purchases = len(all_purchases)
+    purchases = all_purchases[(page_purchases - 1) * per_page: page_purchases * per_page]
+
+    ### VENTES ###
+    all_sales = sorted(
+        drug.sales,
+        key=lambda x: x.sale.date if x.sale else datetime.min,
+        reverse=True
+    )
+    total_sales = len(all_sales)
+    sales = all_sales[(page_sales - 1) * per_page: page_sales * per_page]
+
+    ### PERTES ###
+    all_losses = sorted(
+        drug.losses,
+        key=lambda x: x.date,
+        reverse=True
+    )
+    total_losses = len(all_losses)
+    losses = all_losses[(page_losses - 1) * per_page: page_losses * per_page]
+
+    # Calcul des pages totales
+    def pagination_dict(current_page, total_items):
+        total_pages = ceil(total_items / per_page)
+        return {
+            'page': current_page,
+            'pages': total_pages,
+            'total': total_items,
+            'has_prev': current_page > 1,
+            'has_next': current_page < total_pages,
+            'prev_num': current_page - 1,
+            'next_num': current_page + 1,
+        }
+
+    return render_template(
+        'drugs/history.html',
+        drug=drug,
+        purchases=purchases,
+        sales=sales,
+        losses=losses,
+        pagination_purchases=pagination_dict(page_purchases, total_purchases),
+        pagination_sales=pagination_dict(page_sales, total_sales),
+        pagination_losses=pagination_dict(page_losses, total_losses)
+    )
 
 @bp.route('/drug/expiring')
 @login_required

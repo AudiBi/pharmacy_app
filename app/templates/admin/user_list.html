@@ -11,9 +11,12 @@
     </div>
 
     <!-- Bouton d'ajout -->
-    <div class="d-flex justify-content-end mb-3">
+    <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
         <a href="{{ url_for('admin.create_user') }}" class="btn btn-success">
             <i class="bi bi-person-plus"></i> Nouvel utilisateur
+        </a>
+        <a href="{{ url_for('admin.export_users', search=search, role=role_filter) }}" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Exporter en Excel
         </a>
     </div>
 
@@ -156,6 +159,30 @@
             </tbody>
         </table>
     </div>
+    <!-- Pagination -->
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+        <li class="page-item">
+            <a class="page-link text-success" href="?page={{ pagination.prev_num }}&search={{ search_query }}">← Précédent</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">← Précédent</span></li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">Page {{ pagination.page }} / {{ pagination.pages }}</span>
+        </li>
+
+        {% if pagination.has_next %}
+        <li class="page-item">
+            <a class="page-link text-success" href="?page={{ pagination.next_num }}&search={{ search_query }}">Suivant →</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Suivant →</span></li>
+        {% endif %}
+        </ul>
+    </nav>
 
 </div>
 {% endblock %}

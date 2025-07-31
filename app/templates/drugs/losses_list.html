@@ -11,7 +11,15 @@
             <small class="text-muted">Suivi des pertes dues à expiration, erreur ou dommage</small>
         </div>
     </div>
-
+     <div class="d-flex justify-content-end mb-3">
+       <a href="{{ url_for('drug.export_losses',
+                            drug_id=request.args.get('drug_id'),
+                            start_date=request.args.get('start_date'),
+                            end_date=request.args.get('end_date')) }}"
+        class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Exporter en Excel
+        </a>
+    </div>
     <!-- Formulaire de filtrage automatique -->
     <form method="get" class="row g-3 mb-4 shadow-sm p-3 rounded bg-light align-items-end">
 
@@ -62,7 +70,7 @@
         <div class="fs-5">{{ total_quantity }} unités perdues</div>
     </div>
     {% endif %}
-
+   
     <!-- Tableau -->
     {% if losses %}
     <div class="table-responsive shadow-sm rounded mb-5">
@@ -128,6 +136,28 @@
             </tbody>
         </table>
     </div>
+    <!-- Pagination -->
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if losses.has_prev %}
+            <li class="page-item">
+                <a class="page-link text-success" href="{{ url_for('drug.list_losses', page=losses.prev_num, start_date=start_date, end_date=end_date) }}">Précédent</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+            {% endif %}
+
+            <li class="page-item disabled"><span class="page-link">Page {{ losses.page }} / {{ losses.pages }}</span></li>
+
+            {% if losses.has_next %}
+            <li class="page-item">
+                <a class="page-link text-success" href="{{ url_for('drug.list_losses', page=losses.next_num, start_date=start_date, end_date=end_date) }}">Suivant</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+            {% endif %}
+        </ul>
+    </nav>
     {% else %}
     <div class="alert alert-info text-center shadow-sm">
         <i class="bi bi-info-circle me-2"></i> Aucune perte trouvée avec les critères sélectionnés.
@@ -140,9 +170,28 @@
         <h5 class="mb-3">Évolution des pertes par jour</h5>
         <canvas id="lossChart" height="100"></canvas>
     </div>
+   
+    {% endif %}
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
+    <!-- Ajouter une perte -->
+    <hr class="my-5">
+    <h4 class="mb-3">Ajouter une perte par médicament</h4>
+    <div class="list-group shadow-sm">
+        {% for drug in drugs %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ drug.name }}</strong>
+                <small class="text-muted ms-2">Stock actuel : {{ drug.current_stock() }} {{ drug.unit }}</small>
+            </div>
+            <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-plus-circle"></i> Ajouter une perte
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+ <script>
         const ctx = document.getElementById('lossChart').getContext('2d');
         const lossChart = new Chart(ctx, {
             type: 'line',
@@ -171,24 +220,4 @@
             }
         });
     </script>
-    {% endif %}
-
-    <!-- Ajouter une perte -->
-    <hr class="my-5">
-    <h4 class="mb-3">Ajouter une perte par médicament</h4>
-    <div class="list-group shadow-sm">
-        {% for drug in drugs %}
-        <div class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-                <strong>{{ drug.name }}</strong>
-                <small class="text-muted ms-2">Stock actuel : {{ drug.current_stock() }} {{ drug.unit }}</small>
-            </div>
-            <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-outline-warning">
-                <i class="bi bi-plus-circle"></i> Ajouter une perte
-            </a>
-        </div>
-        {% endfor %}
-    </div>
-
-</div>
 {% endblock %}

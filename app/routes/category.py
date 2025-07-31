@@ -1,6 +1,8 @@
+from io import BytesIO
 from operator import or_
-from flask import Blueprint, render_template, redirect, url_for, flash, abort, request
+from flask import Blueprint, render_template, redirect, send_file, url_for, flash, abort, request
 from flask_login import login_required, current_user
+import pandas as pd
 from app.forms import CategoryForm, DeleteCategoryForm
 from app.models import Category
 from app import db
@@ -37,6 +39,36 @@ def list_categories():
         pagination=pagination,
         search_query=search_query,
         delete_form_category=delete_form_category
+    )
+
+@bp.route('/categories/export_excel')
+@login_required
+def export_categories():
+    search = request.args.get('search', '')
+
+    query = Category.query
+    if search:
+        query = query.filter(Category.name.ilike(f"%{search}%"))
+
+    categories = query.all()
+
+    data = [{
+        "ID": category.id,
+        "Nom": category.name
+    } for category in categories]
+
+    df = pd.DataFrame(data)
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Catégories')
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name='categories_medicaments.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
 @bp.route('/categories/add', methods=['GET', 'POST'])

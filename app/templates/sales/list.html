@@ -10,9 +10,13 @@
 </div>
 
 <!-- Bouton d'ajout -->
-<div class="d-flex justify-content-end mb-3">
+<div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
   <a href="{{ url_for('sale.new_sale') }}" class="btn btn-success">
     <i class="bi bi-plus-circle me-1"></i> Effectuer une nouvelle vente
+  </a>
+  <a href="{{ url_for('sale.export_sales', search=search, start_date=start_date, end_date=end_date, user_id=user_id) }}"
+     class="btn btn-outline-success">
+    <i class="bi bi-download me-1"></i> Exporter en Excel
   </a>
 </div>
 <form method="get" class="row g-3 align-items-end mb-4">
@@ -82,7 +86,7 @@
                         <a href="{{ url_for('sale.sale_receipt', sale_id=sale.id) }}" class="btn btn-warning" title="Réimprimer" target="_blank">
                             <i class="bi bi-printer-fill"></i>
                         </a>
-                        <a href="{{ url_for('sale.return_item', sale_item_id=item.id) }}" class="btn btn-secondary" title="Retour" target="_blank">
+                        <a href="{{ url_for('sale.return_item', sale_item_id=item.id) }}" class="btn btn-secondary" title="Retour">
                             <i class="bi bi-arrow-counterclockwise me-1"></i>
                         </a>
                     </div>
@@ -109,12 +113,13 @@
         </tr>
     </tfoot>
 </table>
-
-<nav>
-    <ul class="pagination">
+<!-- Pagination -->
+ 
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
         {% if sales.has_prev %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('sale.list_sales', page=sales.prev_num, search=search, start_date=start_date, end_date=end_date) }}">Précédent</a>
+            <a class="page-link text-success" href="{{ url_for('sale.list_sales', page=sales.prev_num, search=search, start_date=start_date, end_date=end_date) }}">Précédent</a>
         </li>
         {% else %}
         <li class="page-item disabled"><span class="page-link">Précédent</span></li>
@@ -124,7 +129,7 @@
 
         {% if sales.has_next %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('sale.list_sales', page=sales.next_num, search=search, start_date=start_date, end_date=end_date) }}">Suivant</a>
+            <a class="page-link text-success" href="{{ url_for('sale.list_sales', page=sales.next_num, search=search, start_date=start_date, end_date=end_date) }}">Suivant</a>
         </li>
         {% else %}
         <li class="page-item disabled"><span class="page-link">Suivant</span></li>

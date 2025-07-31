@@ -1,6 +1,8 @@
 from datetime import datetime
-from flask import Blueprint, flash, redirect, render_template, request, jsonify, abort, url_for
+from io import BytesIO
+from flask import Blueprint, flash, redirect, render_template, request, jsonify, abort, send_file, url_for
 from flask_login import login_required, current_user
+import pandas as pd
 from app import db
 from app.forms import PurchaseForm
 from sqlalchemy.orm import joinedload
@@ -47,6 +49,64 @@ def list_purchases():
         drugs=drugs
     )
 
+@bp.route('/purchases/export_excel')
+@login_required
+def export_purchases():
+    supplier_id = request.args.get('supplier_id')
+    drug_id = request.args.get('drug_id')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    query = Purchase.query
+
+    if supplier_id:
+        query = query.filter(Purchase.supplier_id == supplier_id)
+
+    if start_date:
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(Purchase.purchase_date >= start)
+        except ValueError:
+            pass
+
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+            query = query.filter(Purchase.purchase_date <= end)
+        except ValueError:
+            pass
+
+    purchases = query.order_by(Purchase.purchase_date.desc()).all()
+
+    data = []
+    for purchase in purchases:
+        for item in purchase.items:
+            if drug_id and str(item.drug_id) != drug_id:
+                continue
+
+            data.append({
+                "ID Achat": purchase.id,
+                "Date": purchase.purchase_date.strftime('%d/%m/%Y %H:%M') if purchase.purchase_date else '',
+                "Fournisseur": purchase.supplier.name,
+                "Médicament": item.drug.name,
+                "Quantité": item.quantity,
+                "Prix Unitaire (HTG)": f"{item.unit_price:.2f}",
+                "Total (HTG)": f"{item.total_price:.2f}"
+            })
+
+    df = pd.DataFrame(data)
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name="Achats", index=False)
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="liste_achats.xlsx",
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required

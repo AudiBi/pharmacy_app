@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from io import BytesIO
+from flask import Blueprint, render_template, redirect, send_file, url_for, flash, request
+import pandas as pd
 from app.forms import DeleteUserForm, PasswordChangeForm, UserForm
 from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -40,6 +42,9 @@ def list_users():
     search = request.args.get('search', '')
     role_filter = request.args.get('role', '')
 
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Nombre de catégories par page
+
     query = User.query
 
     if search:
@@ -47,10 +52,51 @@ def list_users():
     if role_filter:
         query = query.filter_by(role=role_filter)
 
-    users = query.order_by(User.id).all()
+    # Pagination
+    pagination = query.order_by(User.id).paginate(page=page, per_page=per_page)
+    users = pagination.items
+
     delete_form = DeleteUserForm()  
     
-    return render_template('admin/user_list.html', users=users, search=search, role_filter=role_filter, delete_form=delete_form)
+    return render_template('admin/user_list.html', users=users, pagination=pagination, search=search, role_filter=role_filter, delete_form=delete_form)
+
+@bp.route('/admin/export-users')
+def export_users():
+    search = request.args.get('search', '', type=str).lower()
+    role = request.args.get('role', '', type=str)
+
+    # Filtrage dynamique
+    query = User.query
+    if search:
+        query = query.filter(User.username.ilike(f'%{search}%'))
+    if role:
+        query = query.filter(User.role == role)
+
+    users = query.order_by(User.id).all()
+
+    # Transformation en DataFrame
+    user_data = [{
+        "ID": user.id,
+        "Nom d’utilisateur": user.username,
+        "Rôle": user.role.capitalize(),
+        "Actif": "Oui" if user.is_active else "Non"
+    } for user in users]
+
+    df = pd.DataFrame(user_data)
+
+    # Création fichier Excel en mémoire
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Utilisateurs')
+    output.seek(0)
+
+    # Envoi du fichier en pièce jointe
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='utilisateurs.xlsx'
+    )
 
 @bp.route('/admin/user/<int:user_id>/toggle')
 @login_required

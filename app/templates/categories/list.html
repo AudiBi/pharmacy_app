@@ -12,10 +12,13 @@
   </div>
 
   <!-- Bouton d'ajout -->
-  <div class="d-flex justify-content-end mb-3">
+  <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
     <a href="{{ url_for('category.add_category') }}" class="btn btn-success">
       <i class="bi bi-plus-circle me-1"></i> Ajouter une catégorie
     </a>
+    <a href="{{ url_for('category.export_categories', search=search_query) }}" class="btn btn-outline-success">
+    <i class="bi bi-file-earmark-excel me-1"></i> Exporter en Excel
+  </a>
   </div>
 
   <!-- Formulaire de recherche automatique -->

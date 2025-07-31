@@ -1,6 +1,10 @@
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, request, url_for, flash, abort
+from io import BytesIO
+from flask import Blueprint, render_template, redirect, request, send_file, url_for, flash, abort
 from flask_login import login_required, current_user
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+import pandas as pd
 from app.models import Drug, Payment, ReturnRecord, Sale, SaleItem, User
 from app.forms import SaleForm
 from app import db
@@ -147,6 +151,76 @@ def list_sales():
                            start_date=start_date,
                            end_date=end_date)
 
+@bp.route('/export-sales')
+def export_sales():
+    search = request.args.get('search', '', type=str)
+    start_date = request.args.get('start_date', '', type=str)
+    end_date = request.args.get('end_date', '', type=str)
+    user_id = request.args.get('user_id', type=int)
+
+    query = Sale.query.options(joinedload(Sale.items).joinedload(SaleItem.drug), joinedload(Sale.user))
+
+    if user_id:
+        query = query.filter(Sale.user_id == user_id)
+
+    if search:
+        query = query.join(Sale.items).join(SaleItem.drug)
+        query = query.filter(Drug.name.ilike(f"%{search}%"))
+
+    if start_date:
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(Sale.date >= start)
+        except ValueError:
+            pass
+
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+            query = query.filter(Sale.date <= end)
+        except ValueError:
+            pass
+
+    sales = query.order_by(Sale.date.desc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Ventes de médicaments"
+
+    headers = [ "ID Vente", "Date", "Médicament", "Quantité", "Prix Unitaire", "Montant Total", "Vendu par"]
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center")
+
+    for sale in sales:
+        for item in sale.items:
+            ws.append([
+                sale.id,
+                sale.date.strftime("%d/%m/%Y %H:%M"),
+                item.drug.name,
+                item.quantity,
+                "%.2f" % item.unit_price,
+                "%.2f" % (item.quantity * item.unit_price),
+                sale.user.username
+            ])
+
+    # Ajustement des colonnes
+    for col in ws.columns:
+        max_length = max(len(str(cell.value)) for cell in col if cell.value is not None)
+        ws.column_dimensions[col[0].column_letter].width = max_length + 2
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="ventes_medicaments.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
 @bp.route('/edit/<int:sale_id>', methods=['GET', 'POST'])
 @login_required
 @staff_required
@@ -253,12 +327,14 @@ def return_item(sale_item_id):
 @bp.route('/returns')
 @login_required
 @staff_required
-
 def list_returns():
     # Récupération des paramètres de filtre
     drug_id = request.args.get('drug_id', type=int)
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Nombre de catégories par page
 
     # Base query
     query = ReturnRecord.query.join(ReturnRecord.sale_item).join(SaleItem.drug)
@@ -284,8 +360,9 @@ def list_returns():
         except ValueError:
             pass
 
-    # Tri et limite
-    returns = query.order_by(ReturnRecord.date.desc()).limit(100).all()
+    # Pagination
+    pagination = query.order_by(ReturnRecord.date.desc()).paginate(page=page, per_page=per_page)
+    returns = pagination.items
 
     # Liste des médicaments pour le filtre
     drugs = Drug.query.order_by(Drug.name).all()
@@ -293,12 +370,80 @@ def list_returns():
     return render_template(
         'sales/returns.html',
         returns=returns,
+        pagination=pagination,
         drugs=drugs,
         selected_drug_id=drug_id,
         start_date=start_date_str,
         end_date=end_date_str
     )
 
+@bp.route('/returns/export')
+@login_required
+def export_returns():
+    # Récupération des filtres GET
+    drug_id = request.args.get('drug_id', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    refunded = request.args.get('refunded')  # Pas dans le template actuel, mais prêt si ajouté plus tard
+
+    # Construction de la requête
+    query = ReturnRecord.query.join(SaleItem).join(Drug)
+
+    if drug_id:
+        query = query.filter(SaleItem.drug_id == drug_id)
+
+    if start_date:
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(ReturnRecord.date >= start)
+        except ValueError:
+            pass
+
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+            end = end.replace(hour=23, minute=59, second=59)
+            query = query.filter(ReturnRecord.date <= end)
+        except ValueError:
+            pass
+
+    if refunded == 'yes':
+        query = query.filter(ReturnRecord.refunded.is_(True))
+    elif refunded == 'no':
+        query = query.filter(ReturnRecord.refunded.is_(False))
+
+    returns = query.order_by(ReturnRecord.date.desc()).all()
+
+    # Construction du DataFrame
+    data = []
+    for ret in returns:
+        drug = ret.sale_item.drug
+        sale = ret.sale_item.sale
+
+        data.append({
+            'Date': ret.date.strftime('%d/%m/%Y %H:%M'),
+            'Médicament': drug.name if drug else "Inconnu",
+            'Vente #': sale.id if sale else "N/A",
+            'Qté retournée': ret.quantity,
+            'Montant remboursé (HTG)': round(ret.amount, 2),
+            'Raison': ret.reason or "-",
+            'Remboursé': "Oui" if ret.refunded else "Non"
+        })
+
+    df = pd.DataFrame(data)
+
+    # Export en mémoire
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name="Retours")
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name="retours_medicaments.xlsx"
+    )
 
 @bp.route('/return-receipt/<int:return_id>')
 @login_required

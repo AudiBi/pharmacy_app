@@ -3,90 +3,222 @@
 {% block title %}Historique - {{ drug.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2>📊 Historique du médicament : <strong>{{ drug.name }}</strong></h2>
-  <p><strong>Unité :</strong> {{ drug.unit }} | <strong>Stock actuel :</strong> {{ drug.current_stock() }} | <strong>Date d'expiration :</strong> {{ drug.expiration_date.strftime('%d/%m/%Y') }}</p>
+<div class="container mt-5">
 
-  <hr>
+  <!-- En-tête informative -->
+  <div class="bg-success bg-opacity-10 p-4 rounded shadow-sm mb-4">
+    <h2 class="text-success fw-bold mb-1">
+      <i class="bi bi-clipboard-data me-1"></i> Historique du médicament : {{ drug.name }}
+    </h2>
+    <small class="text-muted">
+      Suivi des achats, ventes et pertes liées à ce produit
+    </small>
+  </div>
 
-  <h4>🛒 Achats</h4>
+  <!-- Informations de base -->
+  <div class="mb-4">
+    <p class="mb-1"><strong>Unité :</strong> {{ drug.unit }}</p>
+    <p class="mb-1"><strong>Stock actuel :</strong> {{ drug.current_stock() }}</p>
+    <p class="mb-1"><strong>Date d'expiration :</strong> {{ drug.expiration_date.strftime('%d/%m/%Y') }}</p>
+  </div>
+
+  <!-- Achats -->
+  <h4 class="mt-4"><i class="bi bi-bag-plus me-1"></i> Achats</h4>
   {% if purchases %}
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Fournisseur</th>
-          <th>Quantité</th>
-          <th>Prix unitaire</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in purchases %}
-        <tr>
-          <td>{{ item.purchase.purchase_date.strftime('%d/%m/%Y') }}</td>
-          <td>{{ item.purchase.supplier.name }}</td>
-          <td>{{ item.quantity }}</td>
-          <td>{{ "%.2f"|format(item.unit_price) }}</td>
-          <td>{{ "%.2f"|format(item.total_price) }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-responsive shadow-sm rounded">
+      <table class="table table-striped table-bordered align-middle">
+        <thead class="table-success">
+          <tr>
+            <th>Date</th>
+            <th>Fournisseur</th>
+            <th>Quantité</th>
+            <th>Prix unitaire</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in purchases %}
+          <tr>
+            <td>{{ item.purchase.purchase_date.strftime('%d/%m/%Y') }}</td>
+            <td>{{ item.purchase.supplier.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ "%.2f"|format(item.unit_price) }} HTG</td>
+            <td>{{ "%.2f"|format(item.total_price) }} HTG</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination des achats -->
+<nav class="mt-4" id="purchases-pagination">
+  <ul class="pagination justify-content-center">
+    {% if pagination_purchases.page > 1 %}
+    <li class="page-item">
+      <a class="page-link text-success"
+        href="{{ url_for('drug.drug_history', drug_id=drug.id, page_purchases=pagination_purchases.page - 1) }}#purchases-section">
+    Précédent
+</a>
+         ← Précédent
+      </a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+      <span class="page-link">← Précédent</span>
+    </li>
+    {% endif %}
+
+    <li class="page-item disabled">
+      <span class="page-link">Page {{ pagination_purchases.page }} / {{ pagination_purchases.pages }}</span>
+    </li>
+
+    {% if pagination_purchases.page < pagination_purchases.pages %}
+    <li class="page-item">
+      <a class="page-link text-success"
+        href="{{ url_for('drug.drug_history', drug_id=drug.id, page_purchases=pagination_purchases.page + 1) }}#purchases-section">
+         Suivant →
+      </a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+      <span class="page-link">Suivant →</span>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
   {% else %}
-    <p>Aucun achat enregistré.</p>
+    <div class="alert alert-info text-center shadow-sm mt-2">
+      <i class="bi bi-info-circle me-1"></i> Aucun achat enregistré pour ce médicament.
+    </div>
   {% endif %}
 
-  <h4 class="mt-4">💰 Ventes</h4>
+  <!-- Ventes -->
+  <h4 class="mt-5"><i class="bi bi-cash-coin me-1"></i> Ventes</h4>
   {% if sales %}
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Quantité</th>
-          <th>Vendu par</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for sale in sales %}
-        <tr>
-          <td>{{ sale.date.strftime('%d/%m/%Y %H:%M') }}</td>
-          <td>{{ sale.quantity }}</td>
-          <td>{{ sale.user.username }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-responsive shadow-sm rounded">
+      <table class="table table-striped table-bordered align-middle">
+        <thead class="table-success">
+          <tr>
+            <th>Date</th>
+            <th>Quantité</th>
+            <th>Prix unitaire</th>
+            <th>Total</th>
+            <th>Vendu par</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in sales %}
+          <tr>
+            <td>{{ sale.sale.date.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>{{ sale.quantity }}</td>
+            <td>{{ sale.unit_price }}</td>
+            <td>{{ sale.total_price }}</td>
+            <td>{{ sale.sale.user.username }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination des ventes -->
+<nav class="mt-4" id="sales-pagination">
+  <ul class="pagination justify-content-center">
+    {% if pagination_sales.page > 1 %}
+    <li class="page-item">
+      <a class="page-link text-success"
+        href="{{ url_for('drug.drug_history', drug_id=drug.id, page_sales=pagination_sales.page - 1) }}#sales-section">
+         ← Précédent
+      </a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+      <span class="page-link">← Précédent</span>
+    </li>
+    {% endif %}
+
+    <li class="page-item disabled">
+      <span class="page-link">Page {{ pagination_sales.page }} / {{ pagination_sales.pages }}</span>
+    </li>
+
+    {% if pagination_sales.page < pagination_sales.pages %}
+    <li class="page-item">
+      <a class="page-link text-success"
+        href="{{ url_for('drug.drug_history', drug_id=drug.id, page_sales=pagination_sales.page + 1) }}#sales-section">
+         Suivant →
+      </a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+      <span class="page-link">Suivant →</span>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+
   {% else %}
-    <p>Aucune vente enregistrée.</p>
+    <div class="alert alert-info text-center shadow-sm mt-2">
+      <i class="bi bi-info-circle me-1"></i> Aucune vente enregistrée pour ce médicament.
+    </div>
   {% endif %}
 
-  <h4 class="mt-4">❌ Pertes</h4>
+  <!-- Pertes -->
+  <h4 class="mt-5"><i class="bi bi-x-octagon me-1"></i> Pertes</h4>
   {% if losses %}
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Quantité</th>
-          <th>Raison</th>
-          <th>Commentaire</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for loss in losses %}
-        <tr>
-          <td>{{ loss.date.strftime('%d/%m/%Y %H:%M') }}</td>
-          <td>{{ loss.quantity }}</td>
-          <td>{{ loss.reason }}</td>
-          <td>{{ loss.comment or "—" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-responsive shadow-sm rounded">
+      <table class="table table-striped table-bordered align-middle">
+        <thead class="table-success">
+          <tr>
+            <th>Date</th>
+            <th>Quantité</th>
+            <th>Raison</th>
+            <th>Commentaire</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for loss in losses %}
+          <tr>
+            <td>{{ loss.date.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>{{ loss.quantity }}</td>
+            <td>{{ loss.reason }}</td>
+            <td>{{ loss.comment or "—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination pour les pertes -->
+<nav class="mt-4" id="losses-section">
+  <ul class="pagination justify-content-center">
+    {% if pagination_losses.page > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('drug.drug_history', drug_id=drug.id, page_losses=pagination_losses.page - 1) }}#losses-section">← Précédent</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">← Précédent</span></li>
+    {% endif %}
+
+    <li class="page-item disabled">
+      <span class="page-link">Page {{ pagination_losses.page }} / {{ pagination_losses.pages }}</span>
+    </li>
+
+    {% if pagination_losses.page < pagination_losses.pages %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('drug.drug_history', drug_id=drug.id, page_losses=pagination_losses.page + 1) }}#losses-section">Suivant →</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Suivant →</span></li>
+    {% endif %}
+  </ul>
+</nav>
+
+
   {% else %}
-    <p>Aucune perte enregistrée.</p>
+    <div class="alert alert-info text-center shadow-sm mt-2">
+      <i class="bi bi-info-circle me-1"></i> Aucune perte enregistrée pour ce médicament.
+    </div>
   {% endif %}
 
-  <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-secondary mt-3">⬅ Retour à la liste</a>
+  <!-- Bouton retour -->
+  <a href="{{ url_for('drug.list_drugs') }}" class="btn btn-outline-secondary mt-4">
+    <i class="bi bi-arrow-left-circle me-1"></i> Retour à la liste des médicaments
+  </a>
 </div>
 {% endblock %}

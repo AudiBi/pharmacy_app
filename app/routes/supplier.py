@@ -1,6 +1,8 @@
+from io import BytesIO
 from operator import or_
-from flask import Blueprint, render_template, redirect, url_for, flash, abort, request
+from flask import Blueprint, render_template, redirect, send_file, url_for, flash, abort, request
 from flask_login import login_required, current_user
+import pandas as pd
 from sqlalchemy import func
 from app.models import Supplier, Purchase
 from app.forms import DeleteSupplierForm, SupplierForm
@@ -38,13 +40,50 @@ def list_suppliers():
 
     # Pagination
     page = request.args.get('page', 1, type=int)
-    pagination = query.paginate(page=page, per_page=10)
-    suppliers = pagination.items
+    suppliers = query.order_by(Supplier.name).paginate(page=page, per_page=10)
 
     
     delete_form_supplier = DeleteSupplierForm()
       
-    return render_template('suppliers/list.html', suppliers=suppliers, pagination=pagination, delete_form_supplier=delete_form_supplier, search_query=search_query )
+    return render_template('suppliers/list.html', suppliers=suppliers, delete_form_supplier=delete_form_supplier, search_query=search_query )
+
+@bp.route('/suppliers/export_excel')
+@login_required
+def export_suppliers():
+    search = request.args.get('search', '')
+
+    query = Supplier.query
+
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            Supplier.name.ilike(search_pattern) |
+            Supplier.contact.ilike(search_pattern) |
+            Supplier.address.ilike(search_pattern)
+        )
+
+    suppliers = query.order_by(Supplier.name.asc()).all()
+
+    data = [{
+        "Nom": s.name,
+        "Contact": s.contact,
+        "Adresse": s.address
+    } for s in suppliers]
+
+    df = pd.DataFrame(data)
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name="Fournisseurs")
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="liste_fournisseurs.xlsx",
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 #  Ajouter un fournisseur
 @bp.route('/add', methods=['GET', 'POST'])
