@@ -60,6 +60,7 @@
                     <th>Nom d’utilisateur</th>
                     <th>Rôle</th>
                     <th>Actif</th>
+                    <th>Dernière connexion</th>
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -76,6 +77,7 @@
                             <span class="badge bg-danger">Non</span>
                         {% endif %}
                     </td>
+                    <td>{{ user.last_login }}</td>
                     <td class="text-center">
                         <div class="d-flex justify-content-center gap-2 flex-wrap">
                             <!-- Modifier -->

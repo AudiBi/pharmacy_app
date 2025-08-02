@@ -121,6 +121,24 @@
             <i class="bi bi-arrow-counterclockwise me-1"></i> Retours
           </a>
         </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="statsDropdown" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-graph-up"></i> Statistiques
+          </a>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" href="{{ url_for('sale.sales_by_seller') }}">
+                <i class="bi bi-people-fill me-1"></i> Ventes par vendeur
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('purchase.purchase_stats_by_supplier') }}">
+                <i class="bi bi-truck"></i> Achats par fournisseur
+              </a>
+            </li>
+            <!-- Ajoute d'autres liens ici -->
+          </ul>
+        </li>
         {% endif %}
       </ul>
 

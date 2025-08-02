@@ -98,24 +98,54 @@
     </div>
   </div>
 </div>
-
-<!-- Top 5 Médicaments -->
 <div class="card mb-4">
-  <div class="card-header"><i class="fas fa-star"></i> Top 5 Médicaments les plus vendus</div>
+  <div class="card-header"><i class="fas fa-user-check"></i> Utilisateurs actifs cette semaine</div>
   <div class="card-body">
-    <ol>
-      {% for drug_name, qty in top5_meds %}
-        <li>{{ drug_name }} - {{ qty }} ventes</li>
+    <ul class="mb-0">
+      {% for user in active_users %}
+        <li>{{ user.username }}</li>
       {% else %}
-        <li>Aucune donnée disponible</li>
+        <li>Aucun utilisateur actif cette semaine.</li>
       {% endfor %}
-    </ol>
+    </ul>
+  </div>
+</div>
+<div class="row">
+  <!-- Top 5 Médicaments -->
+  <div class="col-md-6 mb-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="fas fa-star"></i> Top 5 Médicaments les plus vendus
+      </div>
+      <div class="card-body">
+        <ol class="mb-0">
+          {% for drug_name, qty in top5_meds %}
+            <li>{{ drug_name }} - {{ qty }} ventes</li>
+          {% else %}
+            <li>Aucune donnée disponible</li>
+          {% endfor %}
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camembert Raisons de pertes -->
+  <div class="col-md-6 mb-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="fas fa-chart-pie"></i> Raisons fréquentes de pertes
+      </div>
+      <div class="card-body text-center">
+        <canvas id="lossReasonChart" style="max-height: 250px;"></canvas>
+      </div>
+    </div>
   </div>
 </div>
 
 <hr />
 <canvas id="unitsChart" class="mt-4"></canvas>
 <canvas id="revenueChart" class="mt-4"></canvas>
+
 
 {% endblock %}
 
@@ -154,5 +184,41 @@ new Chart(document.getElementById('revenueChart').getContext('2d'), {
   },
   options: { responsive: true, scales: { y: { beginAtZero: true } } }
 });
+
+   const ctx = document.getElementById('lossReasonChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: {{ loss_reasons | map(attribute=0) | list | tojson }},
+      datasets: [{
+        data: {{ loss_reasons | map(attribute=1) | list | tojson }},
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.7)',
+          'rgba(54, 162, 235, 0.7)',
+          'rgba(255, 206, 86, 0.7)',
+          'rgba(75, 192, 192, 0.7)',
+          'rgba(153, 102, 255, 0.7)'
+        ],
+        borderColor: 'white',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `${context.label}: ${context.parsed} pertes`;
+            }
+          }
+        }
+      }
+    }
+  });
 </script>
 {% endblock %}

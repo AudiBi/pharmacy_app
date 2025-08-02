@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
@@ -13,20 +14,31 @@ def load_user(user_id):
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # Rediriger si déjà connecté
     if current_user.is_authenticated:
         return redirect_based_on_role(current_user)
 
     form = LoginForm()
+
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        if user:
-            if not user.is_active:
-                flash('Compte désactivé. Contactez un administrateur.', 'warning')
-                return redirect(url_for('auth.login'))
-            if check_password_hash(user.password, form.password.data):
-                login_user(user)
-                flash('Connexion réussie !', 'success')
-                return redirect_based_on_role(user)
+
+        if not user:
+            flash('Nom d’utilisateur ou mot de passe incorrect.', 'danger')
+            return render_template('login.html', form=form)
+
+        if not user.is_active:
+            flash('Compte désactivé. Contactez un administrateur.', 'warning')
+            return render_template('login.html', form=form)
+
+        if check_password_hash(user.password, form.password.data):
+            login_user(user)
+            user.mark_login() 
+            user.last_login = datetime.utcnow()  # Facultatif : mise à jour du dernier accès
+            db.session.commit()
+            flash('Connexion réussie !', 'success')
+            return redirect_based_on_role(user)
+
         flash('Nom d’utilisateur ou mot de passe incorrect.', 'danger')
 
     return render_template('login.html', form=form)

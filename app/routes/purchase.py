@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from flask import Blueprint, flash, redirect, render_template, request, jsonify, abort, send_file, url_for
 from flask_login import login_required, current_user
 import pandas as pd
+from sqlalchemy import func
 from app import db
 from app.forms import PurchaseForm
 from sqlalchemy.orm import joinedload
@@ -186,3 +187,30 @@ def view_purchase(purchase_id):
 def empty_purchase_item():
     drugs = Drug.query.order_by(Drug.name).all()
     return render_template('purchase/empty_purchase_item.html', drugs=drugs)
+
+
+@bp.route('/purchase_stats_by_supplier')
+@login_required
+def purchase_stats_by_supplier():
+    days = int(request.args.get('days', 30))  # Par défaut : 30 jours
+    since_date = datetime.utcnow() - timedelta(days=days)
+
+    results = (
+        db.session.query(
+            Supplier.name,
+            func.count(Purchase.id).label("nb_achats"),
+            func.sum(PurchaseItem.quantity * PurchaseItem.unit_price).label("total_depense")
+        )
+        .join(Purchase, Purchase.supplier_id == Supplier.id)
+        .join(PurchaseItem, PurchaseItem.purchase_id == Purchase.id)
+        .filter(Purchase.purchase_date >= since_date)
+        .group_by(Supplier.name)
+        .order_by(func.sum(PurchaseItem.quantity * PurchaseItem.unit_price).desc())
+        .all()
+    )
+
+    return render_template(
+        'purchase/purchase_stats_by_supplier.html',
+        stats=results,
+        selected_days=days
+    )

@@ -1,4 +1,4 @@
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, Form
 from wtforms import DateTimeField, DecimalField, FieldList, FormField, StringField, PasswordField, IntegerField, FloatField, SelectField, DateField, SubmitField, TextAreaField, BooleanField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, Regexp, InputRequired, EqualTo
 from wtforms_sqlalchemy.fields import QuerySelectField
@@ -81,7 +81,7 @@ class SupplierForm(FlaskForm):
 class DeleteSupplierForm(FlaskForm):
     pass
 
-class SaleItemForm(FlaskForm):
+class SaleItemForm(Form):
     class Meta:
         csrf = False  # Désactive CSRF pour les sous-formulaires
 

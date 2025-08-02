@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import BytesIO
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from math import ceil
 from flask import Blueprint, render_template, redirect, send_file, url_for, flash, request, abort

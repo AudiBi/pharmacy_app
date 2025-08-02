@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from flask import Blueprint, render_template, redirect, request, send_file, url_for, flash, abort
 from flask_login import login_required, current_user
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 import pandas as pd
+from sqlalchemy import func
 from app.models import Drug, Payment, ReturnRecord, Sale, SaleItem, User
 from app.forms import SaleForm
 from app import db
@@ -22,6 +23,25 @@ def admin_required(f):
             abort(403)
         return f(*args, **kwargs)
     return decorated_function
+
+def sales_stats_by_seller(days=7):
+    since_date = datetime.utcnow() - timedelta(days=days)
+
+    results = (
+        db.session.query(
+            User.username,
+            func.count(Sale.id).label('nb_ventes'),
+            func.coalesce(func.sum(SaleItem.quantity * SaleItem.unit_price), 0).label('ca_total')
+        )
+        .join(Sale, Sale.user_id == User.id)
+        .join(SaleItem, SaleItem.sale_id == Sale.id)
+        .filter(Sale.date >= since_date)
+        .group_by(User.id)
+        .order_by(func.sum(SaleItem.quantity * SaleItem.unit_price).desc())
+        .all()
+    )
+
+    return results
 
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -228,18 +248,33 @@ def edit_sale(sale_id):
     sale = Sale.query.options(joinedload(Sale.items)).get_or_404(sale_id)
     form = SaleForm()
 
+    # Liste des médicaments
     drugs = Drug.query.order_by(Drug.name).all()
     drug_choices = [(d.id, d.name) for d in drugs]
+    drug_prices = {d.id: float(d.price) for d in drugs}
 
+    # Affecte les choices immédiatement
     for item_form in form.items:
         item_form.form.drug_id.choices = drug_choices
 
+    if request.method == 'GET':
+        form.items.entries = []
+        for item in sale.items:
+            form.items.append_entry({
+                'drug_id': item.drug_id,
+                'quantity': item.quantity
+            })
+
+        # Réaffecte les choices après avoir créé les entrées
+        for item_form in form.items:
+            item_form.form.drug_id.choices = drug_choices
+
     if form.validate_on_submit():
-        # Supprimer les anciens items
+        # Supprime les anciens éléments
         for item in sale.items:
             db.session.delete(item)
 
-        # Ajouter les nouveaux items
+        # Ajoute les nouveaux éléments
         for item_form in form.items.data:
             drug = Drug.query.get(item_form['drug_id'])
             quantity = item_form['quantity']
@@ -265,9 +300,7 @@ def edit_sale(sale_id):
         flash("Vente modifiée avec succès.", "success")
         return redirect(url_for('sale.sale_receipt', sale_id=sale.id))
 
-    # Pré-remplir les valeurs actuelles dans le formulaire (optionnel si WTForms permet)
-    return render_template('sales/edit.html', form=form, sale=sale)
-
+    return render_template('sales/edit.html', form=form, sale=sale, drug_prices=drug_prices)
 
 def get_existing_quantity(sale, drug_id):
     """
@@ -454,3 +487,11 @@ def return_receipt(return_id):
     ).get_or_404(return_id)
 
     return render_template('sales/return_receipt.html', return_record=return_record)
+
+
+@bp.route('/sales_by_seller')
+@login_required
+def sales_by_seller():
+    days = int(request.args.get('days', 7))  # Valeur par défaut : 7 jours
+    stats = sales_stats_by_seller(days)
+    return render_template('sales/sales_by_seller.html', stats=stats, selected_days=days)

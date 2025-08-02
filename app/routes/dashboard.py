@@ -3,7 +3,7 @@ from flask import Blueprint, redirect, render_template, flash, url_for
 from flask_login import login_required, current_user
 from sqlalchemy import extract, func
 from sqlalchemy.orm import joinedload
-from app.models import Drug, Payment, Purchase, ReturnRecord, SaleItem, Supplier, Sale, LossRecord
+from app.models import Drug, Payment, Purchase, ReturnRecord, SaleItem, Supplier, Sale, LossRecord, User
 from datetime import date, timedelta, datetime
 from app import socketio, db
 import random
@@ -16,6 +16,30 @@ LOW_STOCK_THRESHOLD = 5
 def add_alert(msg):
     alerts.append(msg)
     socketio.emit('new_alert', {'message': msg})
+
+def get_frequent_loss_reasons(limit=5):
+    results = (
+        db.session.query(LossRecord.reason, func.count(LossRecord.id).label('count'))
+        .group_by(LossRecord.reason)
+        .order_by(func.count(LossRecord.id).desc())
+        .limit(limit)
+        .all()
+    )
+    return results
+
+def get_active_users_by_sales(days=7):
+    since_date = datetime.utcnow() - timedelta(days=days)
+
+    users = (
+        User.query
+        .join(Sale)
+        .filter(Sale.date >= since_date)
+        .options(joinedload(User.sales))
+        .distinct()
+        .all()
+    )
+
+    return users
 
 @bp.route('/dashboard')
 @login_required
@@ -108,6 +132,9 @@ def dashboard():
         weekly_revenue[index] = float(revenue)
     weekly_labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
+    # Raisons les plus fréquentes de pertes
+    loss_reasons = get_frequent_loss_reasons()
+    active_users = get_active_users_by_sales(days=7)
     common_data = dict(
         total_stock=total_stock,
         ventes_du_jour=ventes_du_jour,
@@ -123,11 +150,12 @@ def dashboard():
         ca_ventes=ca_ventes,
         ca_payments=ca_payments,
         returns_today=returns_today,
-        loss_today=loss_today
+        loss_today=loss_today,
+        loss_reasons=loss_reasons
     )
 
     if current_user.role == 'admin':
-        return render_template('dashboards/admin_dashboard.html', **common_data)
+        return render_template('dashboards/admin_dashboard.html', active_users=active_users, **common_data)
     elif current_user.role == 'pharmacien':
         return render_template('dashboards/pharmacien_dashboard.html', **common_data)
     elif current_user.role == 'vendeur':

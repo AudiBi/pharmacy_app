@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Statistiques des ventes par vendeur{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+  <!-- En-tête -->
+  <div class="bg-success bg-opacity-10 p-4 rounded shadow-sm mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+      <div>
+        <h2 class="text-success fw-bold mb-1">
+          <i class="bi bi-people-fill me-1"></i> Statistiques des ventes par vendeur
+        </h2>
+        <small class="text-muted">Résumé des performances par utilisateur</small>
+      </div>
+
+    </div>
+  </div>
+  
+  <!-- Ligne avec sélecteur -->
+  <div class="d-flex justify-content-start align-items-center mb-3">
+    <form method="get" class="d-inline-block">
+      <div class="input-group input-group-sm">
+        <label class="input-group-text" for="days">Période</label>
+        <select class="form-select" id="days" name="days" onchange="this.form.submit()">
+          <option value="7" {{ 'selected' if selected_days == 7 else '' }}>7 jours</option>
+          <option value="30" {{ 'selected' if selected_days == 30 else '' }}>30 jours</option>
+          <option value="90" {{ 'selected' if selected_days == 90 else '' }}>90 jours</option>
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tableau des ventes -->
+  <div class="table-responsive shadow-sm rounded">
+    <table class="table table-striped table-bordered align-middle">
+      <thead class="table-success">
+        <tr>
+          <th>Vendeur</th>
+          <th class="text-center">Nombre de ventes</th>
+          <th class="text-end">Chiffre d'affaires (HTG)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for username, nb_ventes, ca_total in stats %}
+          <tr>
+            <td>{{ username }}</td>
+            <td class="text-center">{{ nb_ventes }}</td>
+            <td class="text-end">{{ '%.2f'|format(ca_total) }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-muted">Aucune donnée disponible pour cette période.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # admin, pharmacien, vendeur...
     is_active = db.Column(db.Boolean, default=True)
+    last_login = db.Column(db.DateTime, nullable=True)
 
     sales = db.relationship('Sale', back_populates='user')
 
@@ -19,6 +20,10 @@ class User(UserMixin, db.Model):
     def check_password(self, raw_password):
         return check_password_hash(self.password, raw_password)
     
+    def mark_login(self):
+        self.last_login = datetime.utcnow()
+        db.session.commit()
+        
 ### FOURNISSEURS ###
 class Supplier(db.Model):
     id = db.Column(db.Integer, primary_key=True)

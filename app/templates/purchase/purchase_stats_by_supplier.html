@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Achats par fournisseur{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+  <!-- Titre + Sélecteur -->
+  <div class="bg-success bg-opacity-10 p-4 rounded shadow-sm mb-4">
+    <h2 class="text-success fw-bold">
+      <i class="bi bi-truck"></i> Statistiques d'achats par fournisseur
+    </h2>
+    <small class="text-muted">Analyse des fournisseurs sur une période donnée</small>
+  </div>
+
+  <!-- Sélecteur de période -->
+  <div class="d-flex justify-content-start align-items-center mb-3">
+    <form method="get">
+      <div class="input-group input-group-sm">
+        <label class="input-group-text" for="days">Période</label>
+        <select class="form-select" id="days" name="days" onchange="this.form.submit()">
+          <option value="7" {{ 'selected' if selected_days == 7 else '' }}>7 jours</option>
+          <option value="30" {{ 'selected' if selected_days == 30 else '' }}>30 jours</option>
+          <option value="90" {{ 'selected' if selected_days == 90 else '' }}>90 jours</option>
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tableau des statistiques -->
+  <div class="table-responsive shadow-sm rounded">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-success">
+        <tr>
+          <th>Fournisseur</th>
+          <th class="text-center">Nombre d’achats</th>
+          <th class="text-end">Total dépensé (HTG)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for name, nb_achats, total in stats %}
+          <tr>
+            <td>{{ name }}</td>
+            <td class="text-center">{{ nb_achats }}</td>
+            <td class="text-end">{{ '%.2f'|format(total or 0) }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-muted">Aucune donnée pour cette période.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+
+</div>
+{% endblock %}

@@ -80,6 +80,9 @@
                 <td>{{ sale.user.username }}</td>
                 <td>
                     <div class="btn-group btn-group-sm">
+                        <!-- <a href="{{ url_for('sale.edit_sale', sale_id=sale.id) }}" class="btn btn-warning" title="Modifier">
+                            <i class="bi bi-pencil-square"></i>
+                        </a> -->
                         <a href="{{ url_for('sale.history', sale_id=sale.id) }}" class="btn btn-info" title="Voir les détails">
                             <i class="bi bi-eye-fill"></i>
                         </a>
