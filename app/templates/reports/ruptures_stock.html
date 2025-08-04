@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Ruptures de stock{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+        <h2 class="text-success fw-bold mb-0">
+            <i class="bi bi-exclamation-octagon-fill me-1"></i> Médicaments en rupture de stock
+        </h2>
+        <small class="text-muted">Liste des médicaments dont le stock est épuisé</small>
+    </div>
+
+    {% if ruptures %}
+    <table class="table table-bordered align-middle shadow-sm rounded">
+        <thead class="table-success">
+            <tr>
+                <th>Nom</th>
+                <th>Catégorie</th>
+                <th>Date d'expiration</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for drug in ruptures %}
+            <tr>
+                <td>{{ drug.name }}</td>
+                <td>{{ drug.category.name if drug.category else 'Non défini' }}</td>
+                <td>{{ drug.expiration_date.strftime('%d/%m/%Y') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-success">Aucune rupture de stock actuellement.</div>
+    {% endif %}
+</div>
+{% endblock %}

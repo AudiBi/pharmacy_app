@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Alertes de stock{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+        <h2 class="text-success fw-bold mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i> Alertes de stock
+        </h2>
+        <small class="text-muted">Liste des médicaments dont le stock est inférieur au seuil défini ({{ seuil }} unités)</small>
+    </div>
+
+    {% if drugs %}
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-success">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Nom du médicament</th>
+                    <th scope="col" class="text-end">Stock actuel</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for drug in drugs %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ drug.name }}</td>
+                    <td class="text-end">{{ drug.current_stock_calculated }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-success shadow-sm">
+        <i class="bi bi-check-circle me-2"></i>
+        Aucun médicament en dessous du seuil de stock.
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

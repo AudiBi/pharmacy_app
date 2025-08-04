@@ -20,6 +20,10 @@
             border-radius: 5px;
             transition: background-color 0.3s ease;
         }
+        .dropdown-item:active {
+            background-color: #d1e7dd !important; /* vert clair (Bootstrap success-100) */
+            color: #000 !important;
+        }
         /* Style pour zone alertes persistantes */
         #persistent-alerts {
             position: fixed;
@@ -138,6 +142,25 @@
             </li>
             <!-- Ajoute d'autres liens ici -->
           </ul>
+        </li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="rapportDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-bar-chart-line me-1"></i> Rapports
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="rapportDropdown">
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('report.rentabilite_view') }}">
+                        <i class="bi bi-cash-coin me-1"></i> Rentabilité
+                    </a>
+                </li>
+                <li><a class="dropdown-item" href="{{ url_for('drug.top_drugs') }}"><i class="bi bi-capsule me-1"></i> Médicaments les plus vendus</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('drug.stock_alert') }}"><i class="bi bi-exclamation-triangle-fill me-1"></i> Alertes de stock</a></li>
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('drug.stock_out_view') }}">
+                      <i class="bi bi-x-circle me-1"></i> Ruptures de stock
+                  </a>
+              </li>
+            </ul>
         </li>
         {% endif %}
       </ul>

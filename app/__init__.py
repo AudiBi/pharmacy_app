@@ -40,6 +40,7 @@ def create_app():
     from app.routes import history
     from app.routes import purchase
     from app.routes import category
+    from app.routes import reports
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(admin.bp)
@@ -51,6 +52,7 @@ def create_app():
     app.register_blueprint(history.bp)
     app.register_blueprint(purchase.bp)
     app.register_blueprint(category.bp)
+    app.register_blueprint(reports.bp)
 
     @app.route('/')
     def index():

@@ -381,3 +381,47 @@ def expiring_soon():
     drugs = Drug.query.all()
     expiring = [d for d in drugs if d.will_expire_soon(30)]
     return render_template('drugs/expiring.html', drugs=expiring, current_time=datetime.utcnow())
+
+@bp.route('/top-drugs')
+@login_required
+@admin_required
+def top_drugs():
+    # Exemple: récupérer les 10 médicaments les plus vendus par quantité
+    top_drugs_data = db.session.query(
+        SaleItem.drug_id,
+        func.sum(SaleItem.quantity).label('total_qty')
+    ).group_by(SaleItem.drug_id).order_by(func.sum(SaleItem.quantity).desc()).limit(10).all()
+
+    # Récupérer les noms des médicaments
+    drugs = []
+    for drug_id, total_qty in top_drugs_data:
+        drug = db.session.query(Drug).get(drug_id)
+        if drug:
+            drugs.append({'name': drug.name, 'total_qty': total_qty})
+
+    return render_template('reports/top_drugs.html', drugs=drugs)
+
+@bp.route('/stock-alert')
+@login_required
+@admin_required
+def stock_alert():
+    seuil = 5  # seuil de stock bas
+
+    all_drugs = Drug.query.all()
+    low_stock_drugs = []
+
+    for drug in all_drugs:
+        stock = drug.current_stock()
+        if stock < seuil:
+            drug.current_stock_calculated = stock  # attribut temporaire
+            low_stock_drugs.append(drug)
+
+    return render_template("reports/stock_alert.html", drugs=low_stock_drugs, seuil=seuil)
+
+
+@bp.route('/ruptures-stock')
+@login_required
+@admin_required
+def stock_out_view():
+    ruptures = [drug for drug in Drug.query.all() if drug.current_stock() == 0]
+    return render_template('reports/ruptures_stock.html', ruptures=ruptures)

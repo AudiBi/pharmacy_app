@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Rapport de rentabilité{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+        <h2 class="text-success fw-bold mb-0">
+            <i class="bi bi-bar-chart-line me-1"></i> Rapport de rentabilité
+        </h2>
+        <small class="text-muted">Analyse des ventes, achats et pertes sur une période</small>
+    </div>
+
+    <form method="get" class="row g-3 mb-4 shadow-sm p-3 rounded bg-light align-items-end">
+        <div class="col-md-5">
+            <label for="start_date" class="form-label">Date début</label>
+            <input type="date" name="start" id="start_date" class="form-control" value="{{ start_date or '' }}">
+        </div>
+        <div class="col-md-5">
+            <label for="end_date" class="form-label">Date fin</label>
+            <input type="date" name="end" id="end_date" class="form-control" value="{{ end_date or '' }}">
+        </div>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-success mt-1">
+                <i class="bi bi-search"></i> Générer
+            </button>
+        </div>
+    </form>
+
+    {% if total_ventes is none %}
+        <p class="text-muted fst-italic">Veuillez sélectionner une période pour générer le rapport.</p>
+    {% elif total_ventes == 0 %}
+        <p class="text-warning fst-italic">Aucune donnée disponible pour cette période.</p>
+    {% else %}
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-bordered align-middle">
+                <thead class="table-success">
+                    <tr><th>Indicateur</th><th class="text-end">Montant (HTG)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Total des ventes</td><td class="text-end">{{ "%.2f"|format(total_ventes) }}</td></tr>
+                    <tr><td>Total des achats</td><td class="text-end">{{ "%.2f"|format(total_achats) }}</td></tr>
+                    <tr><td>Total des pertes</td><td class="text-end">{{ "%.2f"|format(total_pertes) }}</td></tr>
+                    <tr class="fw-bold table-light"><td>Marge brute</td><td class="text-end">{{ "%.2f"|format(marge_brute) }}</td></tr>
+                    {% if marge_percent is defined %}
+                    <tr class="fw-bold table-light"><td>Marge brute (%)</td><td class="text-end">{{ "%.2f"|format(marge_percent) }}%</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
