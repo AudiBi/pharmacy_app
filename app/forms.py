@@ -146,7 +146,25 @@ class PurchaseForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.supplier.choices = [(supplier.id, supplier.name) for supplier in Supplier.query.order_by(Supplier.name).all()]
+class EditPurchaseForm(FlaskForm):
+    supplier_id = SelectField("Fournisseur", coerce=int, validators=[DataRequired()])
+    purchase_date = DateField("Date d'achat", validators=[DataRequired()])
+    commentaire = TextAreaField("Commentaire")
 
+    items = FieldList(FormField(PurchaseItemForm), min_entries=1)
+
+    submit = SubmitField("Enregistrer")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Charger les fournisseurs dynamiquement
+        self.supplier_id.choices = [
+            (supplier.id, supplier.name)
+            for supplier in Supplier.query.order_by(Supplier.name).all()
+        ]
+class DeletePurchaseForm(FlaskForm):
+    pass
 class CategoryForm(FlaskForm):
     name = StringField("Nom de la catégorie", validators=[DataRequired()])
     submit = SubmitField("Enregistrer")

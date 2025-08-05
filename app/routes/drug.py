@@ -26,27 +26,52 @@ def admin_required(f):
 
 @bp.route('/')
 @login_required
+
 def list_drugs():
     expiring_soon = request.args.get('expiring_soon')
     selected_category = request.args.get('category', type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
 
     # Base query
     query = Drug.query
 
-    # Filtrer par catégorie si sélectionnée
+    # Filtrer par catégorie si nécessaire
     if selected_category:
         query = query.filter_by(category_id=selected_category)
 
-    # Récupération des médicaments
-    drugs = query.all()
-
-    # Appliquer filtre expirant bientôt (en mémoire car méthode Python)
+    # Cas particulier : filtrage "expiring soon" en mémoire
     if expiring_soon:
-        drugs = [d for d in drugs if d.will_expire_soon(30)]
+        # Pas possible d'utiliser paginate() directement ici, car will_expire_soon() est une méthode Python
+        all_filtered = query.all()
+        drugs_filtered = [d for d in all_filtered if d.will_expire_soon(30)]
+        
+        # Création d'une fausse pagination manuelle
+        total = len(drugs_filtered)
+        start = (page - 1) * per_page
+        end = start + per_page
+        items = drugs_filtered[start:end]
 
-    # Charger les catégories pour le menu de filtre
-    categories = Category.query.all()
+        # Création d'un objet pagination factice
+        class ManualPagination:
+            def __init__(self, items, page, per_page, total):
+                self.items = items
+                self.page = page
+                self.per_page = per_page
+                self.total = total
+                self.pages = ceil(total / per_page)
+                self.has_prev = page > 1
+                self.has_next = page < self.pages
+                self.prev_num = page - 1 if self.has_prev else None
+                self.next_num = page + 1 if self.has_next else None
 
+        drugs = ManualPagination(items, page, per_page, total)
+
+    else:
+        # Pagination SQL native
+        drugs = query.order_by(Drug.name).paginate(page=page, per_page=per_page, error_out=False)
+
+    categories = Category.query.order_by(Category.name).all()
     delete_form_drug = DeleteDrugForm()
 
     return render_template(
@@ -57,7 +82,6 @@ def list_drugs():
         expiring_soon=expiring_soon,
         delete_form_drug=delete_form_drug
     )
-
 @bp.route('/add', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -394,18 +418,25 @@ def top_drugs():
 
     # Récupérer les noms des médicaments
     drugs = []
+    names = []
+    quantities = []
+
     for drug_id, total_qty in top_drugs_data:
         drug = db.session.query(Drug).get(drug_id)
         if drug:
             drugs.append({'name': drug.name, 'total_qty': total_qty})
+            names.append(drug.name)
+            quantities.append(total_qty)
 
-    return render_template('reports/top_drugs.html', drugs=drugs)
+    return render_template('reports/top_drugs.html', drugs=drugs, names=names, quantities=quantities)
 
 @bp.route('/stock-alert')
 @login_required
 @admin_required
 def stock_alert():
     seuil = 5  # seuil de stock bas
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
 
     all_drugs = Drug.query.all()
     low_stock_drugs = []
@@ -416,12 +447,70 @@ def stock_alert():
             drug.current_stock_calculated = stock  # attribut temporaire
             low_stock_drugs.append(drug)
 
-    return render_template("reports/stock_alert.html", drugs=low_stock_drugs, seuil=seuil)
+    total = len(low_stock_drugs)
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_drugs = low_stock_drugs[start:end]
+
+    pagination = ManualPagination(paginated_drugs, page, per_page, total)
+
+    return render_template(
+        "reports/stock_alert.html",
+        drugs=pagination,
+        seuil=seuil
+    )
 
 
 @bp.route('/ruptures-stock')
 @login_required
 @admin_required
 def stock_out_view():
-    ruptures = [drug for drug in Drug.query.all() if drug.current_stock() == 0]
-    return render_template('reports/ruptures_stock.html', ruptures=ruptures)
+    seuil = 0  # rupture = stock == 0
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+
+    # Récupérer tous les médicaments en rupture
+    all_ruptures = [drug for drug in Drug.query.all() if drug.current_stock() == seuil]
+
+    total = len(all_ruptures)
+    total_pages = ceil(total / per_page)
+
+    start = (page - 1) * per_page
+    end = start + per_page
+    ruptures = all_ruptures[start:end]
+
+    # Si tu veux ajouter un attribut temporaire (optionnel)
+    for drug in ruptures:
+        drug.current_stock_calculated = drug.current_stock()
+
+    return render_template(
+        'reports/ruptures_stock.html',
+        ruptures=ruptures,
+        page=page,
+        total_pages=total_pages
+    )
+
+
+class ManualPagination:
+    def __init__(self, items, page, per_page, total):
+        self.items = items
+        self.page = page
+        self.per_page = per_page
+        self.total = total
+        self.pages = ceil(total / per_page) if per_page else 1
+
+    @property
+    def has_prev(self):
+        return self.page > 1
+
+    @property
+    def has_next(self):
+        return self.page < self.pages
+
+    @property
+    def prev_num(self):
+        return self.page - 1 if self.has_prev else None
+
+    @property
+    def next_num(self):
+        return self.page + 1 if self.has_next else None

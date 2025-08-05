@@ -11,7 +11,7 @@
         <small class="text-muted">Liste des médicaments dont le stock est inférieur au seuil défini ({{ seuil }} unités)</small>
     </div>
 
-    {% if drugs %}
+    {% if drugs.items %}
     <div class="table-responsive shadow-sm rounded">
         <table class="table table-bordered table-hover align-middle">
             <thead class="table-success">
@@ -22,9 +22,9 @@
                 </tr>
             </thead>
             <tbody>
-                {% for drug in drugs %}
+                {% for drug in drugs.items %}
                 <tr>
-                    <td>{{ loop.index }}</td>
+                    <td>{{ (drugs.page - 1) * drugs.per_page + loop.index }}</td>
                     <td>{{ drug.name }}</td>
                     <td class="text-end">{{ drug.current_stock_calculated }}</td>
                 </tr>
@@ -32,6 +32,30 @@
             </tbody>
         </table>
     </div>
+    <!-- Pagination -->
+<nav class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if drugs.has_prev %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('stock_alert', page=drugs.prev_num) }}">Précédent</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+    {% endif %}
+
+    <li class="page-item disabled">
+      <span class="page-link">Page {{ drugs.page }} / {{ drugs.pages }}</span>
+    </li>
+
+    {% if drugs.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('stock_alert', page=drugs.next_num) }}">Suivant</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+    {% endif %}
+  </ul>
+</nav>
     {% else %}
     <div class="alert alert-success shadow-sm">
         <i class="bi bi-check-circle me-2"></i>

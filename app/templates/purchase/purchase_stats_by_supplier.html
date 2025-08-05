@@ -37,7 +37,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for name, nb_achats, total in stats %}
+        {% for name, nb_achats, total in stats.items %}
           <tr>
             <td>{{ name }}</td>
             <td class="text-center">{{ nb_achats }}</td>
@@ -51,7 +51,26 @@
       </tbody>
     </table>
   </div>
+  <nav class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if stats.has_prev %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('purchase_stats_by_supplier', page=stats.prev_num, days=selected_days) }}">Précédent</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+    {% endif %}
 
+    <li class="page-item disabled"><span class="page-link">Page {{ stats.page }} / {{ stats.pages }}</span></li>
 
+    {% if stats.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('purchase_stats_by_supplier', page=stats.next_num, days=selected_days) }}">Suivant</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+    {% endif %}
+  </ul>
+</nav>
 </div>
 {% endblock %}

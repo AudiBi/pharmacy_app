@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier la vente{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <!-- En-tête -->
+    <div class="bg-success bg-opacity-10 p-3 rounded mb-4">
+        <h2 class="text-success fw-bold mb-0">
+            <i class="bi bi-pencil-square me-2"></i> Modifier une vente
+        </h2>
+        <small class="text-muted">Modification des produits vendus et informations de paiement</small>
+    </div>
+
+    <!-- Affichage des erreurs -->
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <h5 class="mb-2">Veuillez corriger les erreurs suivantes :</h5>
+        <ul class="mb-0">
+            {% for field, errs in form.errors.items() %}
+                <li><strong>{{ field }} :</strong> {{ errs|join(', ') }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Formulaire -->
+    <form method="POST" novalidate class="shadow-sm p-4 rounded bg-light">
+        {{ form.hidden_tag() }}
+
+        <!-- Produits vendus -->
+        <div class="bg-white border rounded p-3 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-capsule me-1"></i> Produits vendus</h5>
+            <div id="items">
+                {% for subform in form.items %}
+                <div class="card mb-3 p-3 product-item shadow-sm">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            {{ subform.form.drug_id.label(class="form-label fw-semibold") }}
+                            {{ subform.form.drug_id(class="form-select drug-select") }}
+                            {% for error in subform.form.drug_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-2">
+                            {{ subform.form.quantity.label(class="form-label fw-semibold") }}
+                            {{ subform.form.quantity(class="form-control quantity-input") }}
+                            {% for error in subform.form.quantity.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Prix unitaire</label>
+                            <input type="text" class="form-control price" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Total</label>
+                            <input type="text" class="form-control item-total" readonly>
+                        </div>
+                        <div class="col-md-2 d-flex justify-content-end">
+                            <button type="button" class="btn btn-outline-danger remove-item">
+                                <i class="bi bi-x-lg"></i> Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" class="btn btn-outline-secondary mb-3" id="add-item">
+                <i class="bi bi-plus-circle me-1"></i> Ajouter un produit
+            </button>
+        </div>
+
+        <!-- Paiement -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                {{ form.payment_method.label(class="form-label fw-semibold") }}
+                {{ form.payment_method(class="form-select") }}
+                {% for error in form.payment_method.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="col-md-6">
+                {{ form.amount_paid.label(class="form-label fw-semibold") }}
+                {{ form.amount_paid(class="form-control") }}
+                {% for error in form.amount_paid.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Total général -->
+        <div class="text-end mb-3">
+            <h5>Total général : <span id="grand-total" class="text-secondary">0.00</span> HTG</h5>
+        </div>
+
+        <!-- Bouton de soumission -->
+        <div class="d-grid">
+            {{ form.submit(class="btn btn-success fw-semibold", formtarget="_blank") }}
+        </div>
+    </form>
+</div>
+
+<!-- Modal : au moins un produit -->
+<div class="modal fade" id="minProductModal" tabindex="-1" aria-labelledby="minProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-success">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="minProductModalLabel"><i class="bi bi-exclamation-triangle me-2"></i> Attention</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                Vous devez conserver <strong>au moins un produit</strong> dans la vente.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Compris</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script : prix des médicaments injectés depuis Flask -->
+<script>
+   const drugPrices = {
+        {% for drug in drug_list %}
+            "{{ drug.id }}": {{ "%.2f"|format(drug.price or 0.0) }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    };
+</script>
+
+<!-- JS dynamique -->
+<script>
+function updateItemEntry(entry) {
+    const drugSelect = entry.querySelector('.drug-select');
+    const quantityInput = entry.querySelector('.quantity-input');
+    const priceField = entry.querySelector('.price');
+    const totalField = entry.querySelector('.item-total');
+
+    const drugId = drugSelect.value;
+    const unitPrice = drugPrices[drugId] || 0;
+    const quantity = parseFloat(quantityInput.value) || 0;
+    const total = unitPrice * quantity;
+
+    priceField.value = unitPrice.toFixed(2);
+    totalField.value = total.toFixed(2);
+
+    updateGrandTotal();
+}
+
+function updateGrandTotal() {
+    let total = 0;
+    document.querySelectorAll('.item-total').forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    document.getElementById('grand-total').textContent = total.toFixed(2);
+}
+
+// Init auto
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.product-item').forEach(function (entry) {
+        updateItemEntry(entry);
+    });
+});
+
+// Changement et saisie
+document.addEventListener('input', function (e) {
+    if (e.target.closest('.product-item')) {
+        updateItemEntry(e.target.closest('.product-item'));
+    }
+});
+document.addEventListener('change', function (e) {
+    if (e.target.closest('.product-item')) {
+        updateItemEntry(e.target.closest('.product-item'));
+    }
+});
+
+// Ajouter un produit
+document.getElementById('add-item').addEventListener('click', function () {
+    const itemsDiv = document.getElementById('items');
+    const firstItem = itemsDiv.querySelector('.product-item');
+    if (!firstItem) return;
+
+    const newItem = firstItem.cloneNode(true);
+
+    // Réinitialiser les valeurs
+    newItem.querySelectorAll('select, input').forEach(input => {
+        if (!input.classList.contains('price') && !input.classList.contains('item-total')) {
+            input.value = '';
+        }
+    });
+
+    // Mettre à jour les index
+    let totalItems = itemsDiv.children.length;
+    newItem.querySelectorAll('select, input').forEach(input => {
+        let name = input.name;
+        if (name) {
+            input.name = name.replace(/\d+/, totalItems);
+            input.id = input.name;
+        }
+    });
+
+    newItem.querySelectorAll('.text-danger').forEach(el => el.remove());
+    itemsDiv.appendChild(newItem);
+
+    updateItemEntry(newItem);
+});
+
+// Supprimer un produit
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item')) {
+        const itemsDiv = document.getElementById('items');
+        if (itemsDiv.children.length > 1) {
+            e.target.closest('.product-item').remove();
+            updateGrandTotal();
+        } else {
+            const modal = new bootstrap.Modal(document.getElementById('minProductModal'));
+            modal.show();
+        }
+    }
+});
+</script>
+{% endblock %}

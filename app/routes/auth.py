@@ -36,7 +36,7 @@ def login():
             user.mark_login() 
             user.last_login = datetime.utcnow()  # Facultatif : mise à jour du dernier accès
             db.session.commit()
-            flash('Connexion réussie !', 'success')
+            # flash('Connexion réussie !', 'success')
             return redirect_based_on_role(user)
 
         flash('Nom d’utilisateur ou mot de passe incorrect.', 'danger')
@@ -55,7 +55,7 @@ def redirect_based_on_role(user):
 @login_required
 def logout():
     logout_user()
-    flash('Déconnexion réussie.', 'info')
+    # flash('Déconnexion réussie.', 'info')
     return redirect(url_for('auth.login'))
 
 @bp.route('/change-password', methods=['GET', 'POST'])

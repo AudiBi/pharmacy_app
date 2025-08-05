@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from io import BytesIO
+from math import ceil
 from flask import Blueprint, render_template, redirect, request, send_file, url_for, flash, abort
 from flask_login import login_required, current_user
 from openpyxl import Workbook
@@ -7,7 +8,8 @@ from openpyxl.styles import Font, Alignment
 import pandas as pd
 from sqlalchemy import func
 from app.models import Drug, Payment, ReturnRecord, Sale, SaleItem, User
-from app.forms import SaleForm
+from app.forms import SaleForm, SaleItemForm
+from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from sqlalchemy.orm import joinedload
 
@@ -245,63 +247,95 @@ def export_sales():
 @login_required
 @staff_required
 def edit_sale(sale_id):
+    # Récupérer la vente avec ses items
     sale = Sale.query.options(joinedload(Sale.items)).get_or_404(sale_id)
+
     form = SaleForm()
-
-    # Liste des médicaments
-    drugs = Drug.query.order_by(Drug.name).all()
-    drug_choices = [(d.id, d.name) for d in drugs]
-    drug_prices = {d.id: float(d.price) for d in drugs}
-
-    # Affecte les choices immédiatement
-    for item_form in form.items:
-        item_form.form.drug_id.choices = drug_choices
+    drug_list = Drug.query.order_by(Drug.name).all()
+    drug_choices = [(d.id, d.name) for d in drug_list]
 
     if request.method == 'GET':
-        form.items.entries = []
+        form.items.entries = []  # Vider la liste actuelle
+
+        # Ajouter les produits existants
         for item in sale.items:
             form.items.append_entry({
                 'drug_id': item.drug_id,
                 'quantity': item.quantity
             })
 
-        # Réaffecte les choices après avoir créé les entrées
-        for item_form in form.items:
-            item_form.form.drug_id.choices = drug_choices
+        # Injecter les choix dans chaque sous-formulaire
+        for subform in form.items:
+            subform.form.drug_id.choices = drug_choices
+
+        # Pré-remplir les données de paiement
+        if sale.payment:
+            form.payment_method.data = sale.payment.payment_method
+            form.amount_paid.data = sale.payment.amount_paid
+        else:
+            form.payment_method.data = ''
+            form.amount_paid.data = 0.0
+
+        return render_template('sales/edit.html', form=form, sale=sale, drug_list=drug_list)
+
+    # POST : injecter les choix dans tous les sous-formulaires AVANT la validation
+    for subform in form.items:
+        subform.form.drug_id.choices = drug_choices
 
     if form.validate_on_submit():
-        # Supprime les anciens éléments
-        for item in sale.items:
-            db.session.delete(item)
+        try:
+            # Supprimer les anciens items de vente
+            SaleItem.query.filter_by(sale_id=sale.id).delete()
 
-        # Ajoute les nouveaux éléments
-        for item_form in form.items.data:
-            drug = Drug.query.get(item_form['drug_id'])
-            quantity = item_form['quantity']
+            new_items = []
+            for item_form in form.items:
+                drug_id = item_form.form.drug_id.data
+                quantity = item_form.form.quantity.data
+                drug = Drug.query.get(drug_id)
 
-            if not drug:
-                flash("Médicament introuvable.", "danger")
-                return redirect(url_for('sale.edit_sale', sale_id=sale.id))
-            if drug.is_expired():
-                flash(f"{drug.name} est expiré.", "danger")
-                return redirect(url_for('sale.edit_sale', sale_id=sale.id))
-            if drug.current_stock() + get_existing_quantity(sale, drug.id) < quantity:
-                flash(f"Stock insuffisant pour {drug.name}.", "danger")
-                return redirect(url_for('sale.edit_sale', sale_id=sale.id))
+                if not drug:
+                    raise Exception(f"Médicament avec ID {drug_id} introuvable.")
 
-            sale_item = SaleItem(
-                drug_id=drug.id,
-                quantity=quantity,
-                unit_price=drug.price
-            )
-            sale.items.append(sale_item)
+                if drug.current_stock() < quantity:
+                    raise Exception(f"Stock insuffisant pour {drug.name}. Stock actuel : {drug.current_stock()}, demandé : {quantity}")
 
-        db.session.commit()
-        flash("Vente modifiée avec succès.", "success")
-        return redirect(url_for('sale.sale_receipt', sale_id=sale.id))
+                new_item = SaleItem(
+                    sale=sale,
+                    drug_id=drug_id,
+                    quantity=quantity,
+                    unit_price=drug.price  # On stocke le prix actuel
+                )
+                new_items.append(new_item)
 
-    return render_template('sales/edit.html', form=form, sale=sale, drug_prices=drug_prices)
+            # Mettre à jour ou créer le paiement
+            if sale.payment:
+                sale.payment.payment_method = form.payment_method.data
+                sale.payment.amount_paid = form.amount_paid.data
+                sale.payment.payment_date = sale.date
+            else:
+                new_payment = Payment(
+                    sale=sale,
+                    payment_method=form.payment_method.data,
+                    amount_paid=form.amount_paid.data,
+                    payment_date=sale.date
+                )
+                db.session.add(new_payment)
 
+            # Ajouter les nouveaux items à la base
+            db.session.add_all(new_items)
+            db.session.commit()
+
+            flash("Vente modifiée avec succès.", "success")
+            return redirect(url_for('sale.sale_receipt', sale_id=sale.id))
+
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash("Erreur lors de la modification : " + str(e), "danger")
+        except Exception as e:
+            db.session.rollback()
+            flash(str(e), "danger")
+
+    return render_template('sales/edit.html', form=form, sale=sale, drug_list=drug_list)
 def get_existing_quantity(sale, drug_id):
     """
     Permet de connaître la quantité déjà vendue dans la vente d'origine pour un médicament donné.
@@ -492,6 +526,36 @@ def return_receipt(return_id):
 @bp.route('/sales_by_seller')
 @login_required
 def sales_by_seller():
-    days = int(request.args.get('days', 7))  # Valeur par défaut : 7 jours
-    stats = sales_stats_by_seller(days)
-    return render_template('sales/sales_by_seller.html', stats=stats, selected_days=days)
+    days = int(request.args.get('days', 7))  # Nombre de jours sélectionnés
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Nombre d'éléments par page
+
+    # Toutes les statistiques (liste de vendeurs + stats)
+    all_stats = sales_stats_by_seller(days)
+    total = len(all_stats)
+
+    # Pagination manuelle
+    start = (page - 1) * per_page
+    end = start + per_page
+    stats_paginated = all_stats[start:end]
+
+    # Simuler un objet de pagination comme avec paginate()
+    class ManualPagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = ceil(total / per_page)
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+
+    stats = ManualPagination(stats_paginated, page, per_page, total)
+
+    return render_template(
+        'sales/sales_by_seller.html',
+        stats=stats,
+        selected_days=days
+    )

@@ -11,30 +11,83 @@
         <small class="text-muted">Liste des produits les plus écoulés sur la période</small>
     </div>
 
-    <div class="table-responsive shadow-sm rounded">
-        <table class="table table-hover table-bordered align-middle">
-            <thead class="table-success">
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Nom du médicament</th>
-                    <th scope="col" class="text-end">Quantité vendue</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for drug in drugs %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td>{{ drug.name }}</td>
-                    <td class="text-end">{{ drug.total_qty }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="3" class="text-center text-muted">Aucun médicament vendu pour l’instant.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="row">
+        <div class="col-md-6 mt-2">
+            <div class="table-responsive shadow-sm rounded">
+                <table class="table table-hover table-bordered align-middle">
+                    <thead class="table-success">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Nom du médicament</th>
+                            <th scope="col" class="text-end">Quantité vendue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for drug in drugs %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ drug.name }}</td>
+                            <td class="text-end">{{ drug.total_qty }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Aucun médicament vendu pour l’instant.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            {% if drugs %}
+            <canvas id="topDrugsChart" height="400"></canvas>
+            {% endif %}
+        </div>
     </div>
 
 </div>
+
+<script>
+  {% if drugs %}
+  const ctx = document.getElementById('topDrugsChart').getContext('2d');
+  const labels = {{ names | tojson }};
+  const quantities = {{ quantities | tojson }};
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Quantité vendue',
+        data: quantities,
+        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+        borderColor: 'rgba(40, 167, 69, 1)',
+        borderWidth: 1,
+        borderRadius: 5,
+        barPercentage: 0.7,
+      }]
+    },
+    options: {
+      indexAxis: 'y', // barres horizontales
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.parsed.x + ' unités'
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+</script>
 {% endblock %}

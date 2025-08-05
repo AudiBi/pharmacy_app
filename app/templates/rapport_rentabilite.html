@@ -48,7 +48,72 @@
                 </tbody>
             </table>
         </div>
+        <!-- Graphique Chart.js -->
+        <canvas id="rentabiliteChart" width="600" height="400" class="mb-4 mt-4"></canvas>
     {% endif %}
 
 </div>
+<script>
+  {% if total_ventes is not none and total_ventes != 0 %}
+  const ctx = document.getElementById('rentabiliteChart').getContext('2d');
+
+  const data = {
+    labels: ['Ventes', 'Achats', 'Pertes', 'Marge Brute'],
+    datasets: [{
+      label: 'Montant en HTG',
+      data: [
+        {{ total_ventes }},
+        {{ total_achats }},
+        {{ total_pertes }},
+        {{ marge_brute }}
+      ],
+      backgroundColor: [
+        'rgba(54, 162, 235, 0.6)',   // bleu
+        'rgba(255, 206, 86, 0.6)',   // jaune
+        'rgba(255, 99, 132, 0.6)',   // rouge
+        'rgba(75, 192, 192, 0.6)'    // vert
+      ],
+      borderColor: [
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(255, 99, 132, 1)',
+        'rgba(75, 192, 192, 1)'
+      ],
+      borderWidth: 1
+    }]
+  };
+
+  const options = {
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          // Formatage des ticks en monnaie locale HTG
+          callback: function(value) {
+            return value.toLocaleString('fr-FR', { style: 'currency', currency: 'HTG' });
+          }
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return context.parsed.y.toLocaleString('fr-FR', { style: 'currency', currency: 'HTG' });
+          }
+        }
+      }
+    }
+  };
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: data,
+    options: options
+  });
+  {% endif %}
+</script>
 {% endblock %}

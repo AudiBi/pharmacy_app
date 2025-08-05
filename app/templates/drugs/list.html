@@ -131,5 +131,46 @@
       </tbody>
     </table>
   </div>
+    <!-- Pagination -->
+    <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+
+        <!-- Précédent -->
+        {% if drugs.has_prev %}
+        <li class="page-item">
+            <a class="page-link text-success"
+               href="{{ url_for('drug.list_drugs', page=drugs.prev_num, category=selected_category, expiring_soon=expiring_soon) }}">
+                Précédent
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">Précédent</span>
+        </li>
+        {% endif %}
+
+        <!-- Page X / Y -->
+        <li class="page-item disabled">
+            <span class="page-link">
+                Page {{ drugs.page }} / {{ drugs.pages }}
+            </span>
+        </li>
+
+        <!-- Suivant -->
+        {% if drugs.has_next %}
+        <li class="page-item">
+            <a class="page-link text-success"
+               href="{{ url_for('drug.list_drugs', page=drugs.next_num, category=selected_category, expiring_soon=expiring_soon) }}">
+                Suivant
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">Suivant</span>
+        </li>
+        {% endif %}
+
+    </ul>
+</nav>
 </div>
 {% endblock %}

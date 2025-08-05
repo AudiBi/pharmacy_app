@@ -1,14 +1,16 @@
 from datetime import datetime, timedelta
 from io import BytesIO
+from math import ceil
 from flask import Blueprint, flash, redirect, render_template, request, jsonify, abort, send_file, url_for
 from flask_login import login_required, current_user
 import pandas as pd
-from sqlalchemy import func
+from sqlalchemy import exists, func
 from app import db
-from app.forms import PurchaseForm
+from app.forms import DeletePurchaseForm, EditPurchaseForm, PurchaseForm, PurchaseItemForm
 from sqlalchemy.orm import joinedload
-from app.models import Purchase, PurchaseItem, Supplier, Drug
+from app.models import Purchase, PurchaseItem, Sale, SaleItem, Supplier, Drug
 from app.routes.supplier import staff_required
+from sqlalchemy.exc import SQLAlchemyError
 
 bp = Blueprint('purchase', __name__, url_prefix='/purchases')
 
@@ -23,6 +25,8 @@ def list_purchases():
     drug_id = request.args.get('drug_id', type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Nombre d’achats par page
 
     if supplier_id:
         query = query.filter(Purchase.supplier_id == supplier_id)
@@ -37,17 +41,19 @@ def list_purchases():
     if drug_id:
         query = query.join(Purchase.items).filter(PurchaseItem.drug_id == drug_id)
 
-    purchases = query.order_by(Purchase.purchase_date.desc()).all()
+    purchases = query.order_by(Purchase.purchase_date.desc()).paginate(page=page, per_page=per_page, error_out=False)
 
     # Charger tous les fournisseurs et médicaments pour le filtre
     suppliers = Supplier.query.all()
     drugs = Drug.query.order_by(Drug.name).all()
-
+    
+    delete_form_purchase = DeletePurchaseForm()
     return render_template(
         'purchase/list.html',
         purchases=purchases,
         suppliers=suppliers,
-        drugs=drugs
+        drugs=drugs,
+        delete_form_purchase=delete_form_purchase 
     )
 
 @bp.route('/purchases/export_excel')
@@ -152,25 +158,121 @@ def new_purchase():
 
     return render_template('purchase/new.html', form=form)
 
-
-
 @bp.route('/edit/<int:purchase_id>', methods=['GET', 'POST'])
 @login_required
 @staff_required
 def edit_purchase(purchase_id):
-    # Non applicable tel quel en mode multi-produits car chaque produit est une ligne distincte
-    flash('Modification de plusieurs produits en un seul achat n\'est pas encore supportée.', 'warning')
-    return redirect(url_for('purchase.list_purchases'))
+    purchase = Purchase.query.options(joinedload(Purchase.items)).get_or_404(purchase_id)
 
+    # 1. Vérifier si l'un des produits a été vendu après la date d'achat
+    for item in purchase.items:
+        has_been_sold = db.session.query(
+            exists().where(
+                (SaleItem.drug_id == item.drug_id) &
+                (SaleItem.sale.has(SaleItem.sale.property.mapper.class_.date >= purchase.purchase_date))
+            )
+        ).scalar()
+
+        if has_been_sold:
+            flash(f"Le médicament '{item.drug.name}' a été vendu après cet achat. "
+                  "Impossible de modifier ou supprimer cet achat.", "danger")
+            return redirect(url_for('purchase.list_purchases'))
+
+    # 2. Formulaire principal
+    form = EditPurchaseForm(obj=purchase)
+
+    # 3. Pré-remplir les items si GET
+    if request.method == 'GET':
+        form.items.entries = []
+        for item in purchase.items:
+            form.items.append_entry({
+                'drug_id': item.drug_id,
+                'quantity': item.quantity,
+                'unit_price': float(item.unit_price)
+            })
+
+    # 4. Charger les choix dynamiques pour chaque sous-formulaire
+    drug_choices = [(d.id, f"{d.name} ({d.category.name if d.category else 'Sans catégorie'})")
+                    for d in Drug.query.order_by(Drug.name).all()]
+    for item_form in form.items:
+        item_form.form.drug_id.choices = drug_choices
+
+    # 5. Si le formulaire est soumis et valide
+    if form.validate_on_submit():
+        try:
+            # Mise à jour des infos principales
+            purchase.supplier_id = form.supplier_id.data
+            purchase.purchase_date = form.purchase_date.data or datetime.utcnow()
+            purchase.commentaire = form.commentaire.data
+
+            # Supprimer les anciens items
+            PurchaseItem.query.filter_by(purchase_id=purchase.id).delete()
+
+            # Ajouter les nouveaux items
+            for item_form in form.items:
+                new_item = PurchaseItem(
+                    purchase=purchase,
+                    drug_id=item_form.form.drug_id.data,
+                    quantity=item_form.form.quantity.data,
+                    unit_price=float(item_form.form.unit_price.data)
+                )
+                db.session.add(new_item)
+
+            db.session.commit()
+            flash("Achat mis à jour avec succès.", "success")
+            return redirect(url_for('purchase.list_purchases'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash("Une erreur est survenue lors de la mise à jour : " + str(e), "danger")
+
+    return render_template('purchase/edit_purchase.html', form=form, purchase=purchase)
 
 @bp.route('/delete/<int:purchase_id>', methods=['POST'])
 @login_required
 @staff_required
 def delete_purchase(purchase_id):
     purchase = Purchase.query.get_or_404(purchase_id)
-    db.session.delete(purchase)
-    db.session.commit()
-    flash('Achat supprimé.', 'info')
+
+    # Vérifier si des ventes ont été faites avec les médicaments de cet achat
+    for item in purchase.items:
+        drug = item.drug
+        if not drug:
+            continue
+        # Vérifier si ce médicament a été vendu (quantité vendue > 0)
+        total_sold = sum(sale_item.quantity for sale_item in drug.sales)
+        if total_sold > 0:
+            flash(
+                f"Suppression impossible : le médicament '{drug.name}' a déjà été vendu.",
+                "danger"
+            )
+            return redirect(url_for('purchase.list_purchases'))
+
+    # Vérifier que la suppression ne causera pas de stock négatif
+    problematic_items = []
+    for item in purchase.items:
+        drug = item.drug
+        if drug is None:
+            continue
+        current_stock = drug.current_stock()
+        if current_stock - item.quantity < 0:
+            problematic_items.append((drug.name, current_stock, item.quantity))
+
+    if problematic_items:
+        msg = "Suppression impossible : stock insuffisant pour les médicaments suivants :\n"
+        for name, stock, qty in problematic_items:
+            msg += f"- {name} (stock actuel: {stock}, quantité à retirer: {qty})\n"
+        flash(msg, "danger")
+        return redirect(url_for('purchase.list_purchases'))
+
+    # Si tout est OK, suppression
+    try:
+        db.session.delete(purchase)
+        db.session.commit()
+        flash('Achat supprimé avec succès.', 'success')
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash("Une erreur est survenue lors de la suppression. Veuillez réessayer.", "danger")
     return redirect(url_for('purchase.list_purchases'))
 
 
@@ -192,7 +294,9 @@ def empty_purchase_item():
 @bp.route('/purchase_stats_by_supplier')
 @login_required
 def purchase_stats_by_supplier():
-    days = int(request.args.get('days', 30))  # Par défaut : 30 jours
+    days = int(request.args.get('days', 30))  # Par défaut 30 jours
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # items par page
     since_date = datetime.utcnow() - timedelta(days=days)
 
     results = (
@@ -209,8 +313,39 @@ def purchase_stats_by_supplier():
         .all()
     )
 
+    total = len(results)
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_results = results[start:end]
+
+    pagination = ManualPagination(paginated_results, page, per_page, total)
+
     return render_template(
         'purchase/purchase_stats_by_supplier.html',
-        stats=results,
+        stats=pagination,
         selected_days=days
     )
+
+class ManualPagination:
+    def __init__(self, items, page, per_page, total):
+        self.items = items
+        self.page = page
+        self.per_page = per_page
+        self.total = total
+        self.pages = ceil(total / per_page) if per_page else 1
+
+    @property
+    def has_prev(self):
+        return self.page > 1
+
+    @property
+    def has_next(self):
+        return self.page < self.pages
+
+    @property
+    def prev_num(self):
+        return self.page - 1 if self.has_prev else None
+
+    @property
+    def next_num(self):
+        return self.page + 1 if self.has_next else None
