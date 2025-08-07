@@ -14,13 +14,15 @@
 
 <!-- Bouton d'ajout -->
 <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
-  <a href="{{ url_for('drug.add_drug') }}" class="btn btn-success">
-    <i class="bi bi-plus-circle me-1"></i> Ajouter un médicament
-  </a>
-  <a href="{{ url_for('drug.export_excel', category=selected_category, expiring_soon=expiring_soon) }}"
-     class="btn btn-outline-success">
-    <i class="bi bi-download me-1"></i> Exporter en Excel
-  </a>
+  {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('drug.add_drug') }}" class="btn btn-success">
+      <i class="bi bi-plus-circle me-1"></i> Ajouter un médicament
+    </a>
+    <a href="{{ url_for('drug.export_excel', category=selected_category, expiring_soon=expiring_soon) }}"
+      class="btn btn-outline-success">
+      <i class="bi bi-download me-1"></i> Exporter en Excel
+    </a>
+  {% endif %}
 </div>
 <!-- Formulaire de filtre -->
 <form method="GET" class="row g-3 align-items-end shadow-sm p-3 rounded bg-light mt-3">
@@ -68,7 +70,9 @@
           <th>Unité</th>
           <th>Expiration</th>
           <th>Catégorie</th>
-          <th class="text-center">Actions</th>
+          {% if current_user.role == 'admin' %}
+            <th class="text-center">Actions</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
@@ -80,26 +84,28 @@
             <td>{{ drug.unit }}</td>
             <td>{{ drug.expiration_date.strftime('%d/%m/%Y') }}</td>
             <td>{{ drug.category.name }}</td>
-            <td class="text-center">
-              <a href="{{ url_for('drug.edit_drug', drug_id=drug.id) }}" class="btn btn-sm btn-warning" title="Modifier">
-                <i class="bi bi-pencil-square"></i>
-              </a>
-              <a href="{{ url_for('drug.drug_history', drug_id=drug.id) }}" class="btn btn-sm btn-info" title="Voir l'historique">
-                <i class="bi bi-clock-history"></i>
-              </a>
-              <!-- <a href="{{ url_for('drug.expiring_soon') }}" class="btn btn-sm btn-warning" title="Expire bientôt">
-                <i class="bi bi-clock me-1"></i>
-              </a> -->
-              <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-danger" title="Déclarer une perte">
-                <i class="bi bi-exclamation-circle"></i>
-              </a>
-              {% if drug.current_stock() == 0 %}
-                <!-- Bouton suppression avec modal -->
-                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ drug.id }}" title="Supprimer">
-                  <i class="bi bi-trash"></i>
-                </button>
-              {% endif %}
-            </td>
+            {% if current_user.role == 'admin' %}
+              <td class="text-center">
+                <a href="{{ url_for('drug.edit_drug', drug_id=drug.id) }}" class="btn btn-sm btn-warning" title="Modifier">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                <a href="{{ url_for('drug.drug_history', drug_id=drug.id) }}" class="btn btn-sm btn-info" title="Voir l'historique">
+                  <i class="bi bi-clock-history"></i>
+                </a>
+                <!-- <a href="{{ url_for('drug.expiring_soon') }}" class="btn btn-sm btn-warning" title="Expire bientôt">
+                  <i class="bi bi-clock me-1"></i>
+                </a> -->
+                <a href="{{ url_for('drug.new_loss', drug_id=drug.id) }}" class="btn btn-sm btn-danger" title="Déclarer une perte">
+                  <i class="bi bi-exclamation-circle"></i>
+                </a>
+                {% if drug.current_stock() == 0 %}
+                  <!-- Bouton suppression avec modal -->
+                  <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ drug.id }}" title="Supprimer">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                {% endif %}
+              </td>
+            {% endif %}
           </tr>
 
           <!-- Modal de confirmation suppression -->

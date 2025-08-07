@@ -12,7 +12,7 @@ migrate = Migrate()
 
 login_manager.login_view = 'auth.login'
 
-socketio = SocketIO()
+socketio = SocketIO(cors_allowed_origins="*")  
 
 def create_app():
     app = Flask(__name__)

@@ -26,7 +26,6 @@ def admin_required(f):
 
 @bp.route('/')
 @login_required
-
 def list_drugs():
     expiring_soon = request.args.get('expiring_soon')
     selected_category = request.args.get('category', type=int)
@@ -59,11 +58,14 @@ def list_drugs():
                 self.page = page
                 self.per_page = per_page
                 self.total = total
-                self.pages = ceil(total / per_page)
+                self.pages = ceil(total / per_page) if per_page else 0
                 self.has_prev = page > 1
                 self.has_next = page < self.pages
                 self.prev_num = page - 1 if self.has_prev else None
                 self.next_num = page + 1 if self.has_next else None
+
+            def __iter__(self):
+                return iter(self.items)
 
         drugs = ManualPagination(items, page, per_page, total)
 
@@ -82,6 +84,7 @@ def list_drugs():
         expiring_soon=expiring_soon,
         delete_form_drug=delete_form_drug
     )
+
 @bp.route('/add', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -332,7 +335,7 @@ def export_excel():
 
 @bp.route('/drug/<int:drug_id>/history')
 @login_required
-@staff_required
+@admin_required
 def drug_history(drug_id):
     drug = Drug.query.options(
         joinedload(Drug.purchase_items).joinedload(PurchaseItem.purchase),
