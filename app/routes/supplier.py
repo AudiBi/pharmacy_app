@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, redirect, send_file, url_for, flas
 from flask_login import login_required, current_user
 import pandas as pd
 from sqlalchemy import func
+from app.decorators import admin_required
 from app.models import Supplier, Purchase
 from app.forms import DeleteSupplierForm, SupplierForm
 from app import db
@@ -11,20 +12,10 @@ from flask_paginate import Pagination, get_page_parameter
 
 bp = Blueprint('supplier', __name__, url_prefix='/suppliers')
 
-# Autorisation pour admin OU pharmacien
-def staff_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role not in ['admin', 'pharmacien']:
-            abort(403)
-        return f(*args, **kwargs)
-    return decorated_function
-
 #  Lister tous les fournisseurs
 @bp.route('/')
 @login_required
-@staff_required
+@admin_required
 def list_suppliers():
     search_query = request.args.get('search', '').strip()
 
@@ -49,6 +40,7 @@ def list_suppliers():
 
 @bp.route('/suppliers/export_excel')
 @login_required
+@admin_required
 def export_suppliers():
     search = request.args.get('search', '')
 
@@ -88,7 +80,7 @@ def export_suppliers():
 #  Ajouter un fournisseur
 @bp.route('/add', methods=['GET', 'POST'])
 @login_required
-@staff_required
+@admin_required
 def add_supplier():
     form = SupplierForm()
     
@@ -119,7 +111,7 @@ def add_supplier():
 # Modifier un fournisseur
 @bp.route('/edit/<int:supplier_id>', methods=['GET', 'POST'])
 @login_required
-@staff_required
+@admin_required
 def edit_supplier(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
     form = SupplierForm(obj=supplier)
@@ -135,7 +127,7 @@ def edit_supplier(supplier_id):
 # Supprimer un fournisseur
 @bp.route('/delete/<int:supplier_id>', methods=['POST'])
 @login_required
-@staff_required
+@admin_required
 def delete_supplier(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
     if supplier.purchases:
@@ -149,7 +141,7 @@ def delete_supplier(supplier_id):
 # Voir l'historique des achats liés à un fournisseur
 @bp.route('/<int:supplier_id>/purchases')
 @login_required
-@staff_required
+@admin_required
 def supplier_purchases(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
     purchases = supplier.purchases 

@@ -7,22 +7,12 @@ from math import ceil
 from flask import Blueprint, render_template, redirect, send_file, url_for, flash, request, abort
 from flask_login import login_required, current_user
 import pandas as pd
+from app.decorators import admin_required, staff_required
 from app.models import Category, Drug, LossRecord, PurchaseItem, Sale, SaleItem
 from app.forms import DeleteDrugForm, DrugForm, LossForm
 from app import db
-from app.routes.supplier import staff_required
 
 bp = Blueprint('drug', __name__, url_prefix='/drugs')
-
-# Décorateur simple pour restreindre aux admins
-def admin_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'admin':
-            abort(403)
-        return f(*args, **kwargs)
-    return decorated_function
 
 @bp.route('/')
 @login_required

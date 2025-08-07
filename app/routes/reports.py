@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, flash
 from flask_login import login_required
 from datetime import datetime, date
-from app.routes.drug import admin_required
+from app.decorators import admin_required
 from app.services.reporting import rapport_rentabilite
 
 bp = Blueprint('report', __name__, url_prefix='/reports')

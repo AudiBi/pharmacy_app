@@ -37,7 +37,7 @@
 
   <!-- Chiffre d'affaires -->
   <div class="col-md-3">
-    <div class="card text-white bg-info mb-3">
+    <div class="card text-white bg-primary mb-3">
       <div class="card-header"><i class="fas fa-dollar-sign"></i> Paiements reçus aujourd’hui</div>
       <div class="card-body">
         <h5 class="card-title">{{ "%.2f"|format(ca_payments) }} HTG</h5>
@@ -102,7 +102,7 @@
 
 <!-- Top 5 Médicaments -->
 <div class="card mb-4">
-  <div class="card-header"><i class="fas fa-pills"></i> Top 5 Médicaments les plus vendus</div>
+  <div class="card-header bg-info bg-opacity-10"><i class="fas fa-pills"></i> Top 5 Médicaments les plus vendus</div>
   <div class="card-body">
     <ol>
       {% for drug_name, qty in top5_meds %}

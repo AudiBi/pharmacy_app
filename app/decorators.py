@@ -14,3 +14,22 @@ def role_required(*roles):
         return decorated_view
     return wrapper
 
+# Décorateur simple pour restreindre aux admins
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Autorisation pour admin OU pharmacien
+def staff_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role not in ['admin', 'pharmacien']:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function

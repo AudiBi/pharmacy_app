@@ -6,10 +6,10 @@ from flask_login import login_required, current_user
 import pandas as pd
 from sqlalchemy import exists, func
 from app import db
+from app.decorators import admin_required
 from app.forms import DeletePurchaseForm, EditPurchaseForm, PurchaseForm, PurchaseItemForm
 from sqlalchemy.orm import joinedload
 from app.models import Purchase, PurchaseItem, Sale, SaleItem, Supplier, Drug
-from app.routes.supplier import staff_required
 from sqlalchemy.exc import SQLAlchemyError
 
 bp = Blueprint('purchase', __name__, url_prefix='/purchases')
@@ -17,7 +17,7 @@ bp = Blueprint('purchase', __name__, url_prefix='/purchases')
 
 @bp.route('/', methods=['GET'])
 @login_required
-@staff_required
+@admin_required
 def list_purchases():
     query = Purchase.query.options(joinedload(Purchase.items).joinedload(PurchaseItem.drug))
 
@@ -58,6 +58,7 @@ def list_purchases():
 
 @bp.route('/purchases/export_excel')
 @login_required
+@admin_required
 def export_purchases():
     supplier_id = request.args.get('supplier_id')
     drug_id = request.args.get('drug_id')
@@ -117,7 +118,7 @@ def export_purchases():
 
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
-@staff_required
+@admin_required
 def new_purchase():
     form = PurchaseForm()
 
@@ -160,7 +161,7 @@ def new_purchase():
 
 @bp.route('/edit/<int:purchase_id>', methods=['GET', 'POST'])
 @login_required
-@staff_required
+@admin_required
 def edit_purchase(purchase_id):
     purchase = Purchase.query.options(joinedload(Purchase.items)).get_or_404(purchase_id)
 
@@ -230,7 +231,7 @@ def edit_purchase(purchase_id):
 
 @bp.route('/delete/<int:purchase_id>', methods=['POST'])
 @login_required
-@staff_required
+@admin_required
 def delete_purchase(purchase_id):
     purchase = Purchase.query.get_or_404(purchase_id)
 
@@ -278,14 +279,14 @@ def delete_purchase(purchase_id):
 
 @bp.route('/purchase/<int:purchase_id>')
 @login_required
-@staff_required
+@admin_required
 def view_purchase(purchase_id):
     purchase = Purchase.query.get_or_404(purchase_id)
     return render_template('purchase/view_purchase.html', purchase=purchase)
 
 @bp.route('/empty_item_template')
 @login_required
-@staff_required
+@admin_required
 def empty_purchase_item():
     drugs = Drug.query.order_by(Drug.name).all()
     return render_template('purchase/empty_purchase_item.html', drugs=drugs)
@@ -293,6 +294,7 @@ def empty_purchase_item():
 
 @bp.route('/purchase_stats_by_supplier')
 @login_required
+@admin_required
 def purchase_stats_by_supplier():
     days = int(request.args.get('days', 30))  # Par défaut 30 jours
     page = request.args.get('page', 1, type=int)

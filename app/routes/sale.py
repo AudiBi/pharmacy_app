@@ -7,24 +7,15 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 import pandas as pd
 from sqlalchemy import func
+from app.decorators import admin_required, staff_required
 from app.models import Drug, Payment, ReturnRecord, Sale, SaleItem, User
 from app.forms import SaleForm, SaleItemForm
 from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from sqlalchemy.orm import joinedload
 
-from app.routes.supplier import staff_required
 
 bp = Blueprint('sale', __name__, url_prefix='/sales')
-
-def admin_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'admin':
-            abort(403)
-        return f(*args, **kwargs)
-    return decorated_function
 
 def sales_stats_by_seller(days=7):
     since_date = datetime.utcnow() - timedelta(days=days)
@@ -358,7 +349,7 @@ def delete_sale(sale_id):
     return redirect(url_for('sale.list_sales'))
 
 @bp.route('/return/<int:sale_item_id>', methods=['GET', 'POST'])
-@login_required
+@staff_required
 def return_item(sale_item_id):
     sale_item = SaleItem.query.options(joinedload(SaleItem.drug)).get_or_404(sale_item_id)
 
@@ -445,7 +436,7 @@ def list_returns():
     )
 
 @bp.route('/returns/export')
-@login_required
+@staff_required
 def export_returns():
     # Récupération des filtres GET
     drug_id = request.args.get('drug_id', type=int)
@@ -513,7 +504,7 @@ def export_returns():
     )
 
 @bp.route('/return-receipt/<int:return_id>')
-@login_required
+@staff_required
 def return_receipt(return_id):
     return_record = ReturnRecord.query.options(
         joinedload(ReturnRecord.sale_item).joinedload(SaleItem.drug),
@@ -524,7 +515,7 @@ def return_receipt(return_id):
 
 
 @bp.route('/sales_by_seller')
-@login_required
+@admin_required
 def sales_by_seller():
     days = int(request.args.get('days', 7))  # Nombre de jours sélectionnés
     page = request.args.get('page', 1, type=int)

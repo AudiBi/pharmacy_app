@@ -3,20 +3,18 @@ from operator import or_
 from flask import Blueprint, render_template, redirect, send_file, url_for, flash, abort, request
 from flask_login import login_required, current_user
 import pandas as pd
+from app.decorators import admin_required
 from app.forms import CategoryForm, DeleteCategoryForm
 from app.models import Category
 from app import db
 from flask_paginate import Pagination, get_page_parameter
-
-from app.routes.drug import admin_required
-from app.routes.supplier import staff_required
 
 bp = Blueprint('category', __name__, url_prefix='/categories')
 
 
 @bp.route('/')
 @login_required
-@staff_required
+@admin_required
 def list_categories():
     search_query = request.args.get('search', '', type=str)
     page = request.args.get('page', 1, type=int)
@@ -42,7 +40,7 @@ def list_categories():
     )
 
 @bp.route('/categories/export_excel')
-@login_required
+@admin_required
 def export_categories():
     search = request.args.get('search', '')
 
@@ -73,7 +71,7 @@ def export_categories():
 
 @bp.route('/categories/add', methods=['GET', 'POST'])
 @login_required
-@staff_required
+@admin_required
 def add_category():
     form = CategoryForm()
     if form.validate_on_submit():
@@ -93,7 +91,7 @@ def add_category():
 
 @bp.route('/categories/<int:category_id>/edit', methods=['GET', 'POST'])
 @login_required
-@staff_required
+@admin_required
 def edit_category(category_id):
     category = Category.query.get_or_404(category_id)
     form = CategoryForm(obj=category)

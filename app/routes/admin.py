@@ -5,9 +5,8 @@ from app.forms import DeleteUserForm, PasswordChangeForm, UserForm
 from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import current_user, login_required
-from app.decorators import role_required
+from app.decorators import admin_required, role_required
 from app import db
-from app.routes.drug import admin_required
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
