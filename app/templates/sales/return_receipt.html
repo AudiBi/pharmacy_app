@@ -10,62 +10,63 @@
             margin: auto;
             padding: 10px;
         }
-
         .header {
             text-align: center;
             border-bottom: 1px dashed #000;
             padding-bottom: 10px;
             margin-bottom: 10px;
         }
-
         .logo {
             max-width: 80px;
             margin-bottom: 5px;
         }
-
         .pharmacy-info {
             font-size: 13px;
             line-height: 1.4;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
             font-size: 13px;
+            font-family: monospace;
         }
 
         th, td {
+            padding: 4px 3px;
             text-align: left;
-            padding: 3px 0;
+            vertical-align: top;
+        }
+
+        thead tr {
+            border-bottom: 1px dashed #000;
+        }
+
+        tbody tr:not(:last-child) {
+            border-bottom: 1px dotted #ccc;
         }
 
         tfoot td {
             font-weight: bold;
-            border-top: 1px solid #000;
-            padding-top: 4px;
+            padding-top: 6px;
+            border-top: 1px dashed #000;
         }
-
         .barcode {
             text-align: center;
             margin-top: 12px;
         }
-
         .footer {
             text-align: center;
             font-size: 12px;
             margin-top: 14px;
         }
-
         .totals {
             margin-top: 10px;
             font-size: 13px;
         }
-
         .totals p {
             margin: 2px 0;
         }
-
         @media print {
             button, a {
                 display: none;
@@ -80,9 +81,7 @@
 <body>
 
 <div class="header">
-    <!-- LOGO -->
     <img src="{{ url_for('static', filename='img/logo600.png') }}" alt="Logo pharmacie" class="logo">
-    <!-- INFOS PHARMACIE -->
     <div class="pharmacy-info">
         <strong>Pharmacie XYZ</strong><br>
         123 Rue de la Santé, Quartier Médical<br>
@@ -90,15 +89,13 @@
         Email: contact@pharmaciexyz.ci
     </div>
 
-    <!-- INFOS REÇU -->
     <p style="margin-top: 8px; font-size: 13px;">
-        Date : {{ return_record.date.strftime("%d/%m/%Y %H:%M") }}<br>
-        Retour N° : {{ return_record.id }}<br>
-        Vente N° : {{ return_record.sale_item.sale.id }}
+        Date : {{ return_records[-1].date.strftime("%d/%m/%Y %H:%M") if return_records else '' }}<br>
+        Vente N° : {{ return_records[0].sale_item.sale.id if return_records else '' }}
     </p>
+
 </div>
 
-<!-- PRODUIT RETOURNÉ -->
 <table>
     <thead>
         <tr>
@@ -106,48 +103,42 @@
             <th>Qté</th>
             <th>PU</th>
             <th>Total</th>
+            <th>Motif</th>
         </tr>
     </thead>
     <tbody>
+        {% for record in return_records %}
         <tr>
-            <td>{{ return_record.sale_item.drug.name }}</td>
-            <td>{{ return_record.quantity }}</td>
-            <td>{{ "%.2f"|format(return_record.sale_item.unit_price) }}</td>
-            <td>{{ "%.2f"|format(return_record.quantity * return_record.sale_item.unit_price) }}</td>
+            <td>{{ record.sale_item.drug.name }}</td>
+            <td>{{ record.quantity }}</td>
+            <td>{{ "%.2f"|format(record.sale_item.unit_price) }}</td>
+            <td>{{ "%.2f"|format(record.amount) }}</td>
+            <td>{{ record.reason or "Non précisé" }}</td>
         </tr>
+        {% endfor %}
     </tbody>
     <tfoot>
         <tr>
             <td colspan="3">Montant remboursé</td>
-            <td>{{ "%.2f"|format(return_record.quantity * return_record.sale_item.unit_price) }} HTG</td>
+            <td colspan="2">{{ "%.2f"|format(total_returned) }} HTG</td>
         </tr>
     </tfoot>
 </table>
 
-<!-- INFOS SUPPLÉMENTAIRES -->
-<div class="totals">
-    <p><strong>Motif :</strong> {{ return_record.reason or "Non précisé" }}</p>
-</div>
-
-<!-- BARCODE -->
 <div class="barcode">
     <svg id="barcode"></svg>
 </div>
 
-<!-- MESSAGE FINAL -->
 <div class="footer">
     Merci pour votre confiance.<br>
     Retour enregistré.
 </div>
 
-<!-- ACTIONS -->
-<!-- <a href="{{ url_for('sale.list_returns') }}" class="btn btn-secondary mt-3">← Voir les retours</a> -->
 <button onclick="window.print()">🖨️ Imprimer</button>
 
-<!-- BARCODE SCRIPT -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode/dist/JsBarcode.all.min.js"></script>
 <script>
-    JsBarcode("#barcode", "RET{{ return_record.id }}", {
+    JsBarcode("#barcode", "VENTE{{ return_records[0].sale_item.sale.id if return_records else '' }}", {
         format: "CODE128",
         width: 2,
         height: 40,

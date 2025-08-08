@@ -1,58 +1,69 @@
 {% extends 'base.html' %}
 
-{% block title %}Retour - {{ sale_item.drug.name }}{% endblock %}
+{% block title %}Retour de Médicaments - Vente #{{ sale_items[0].sale.id }}{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
 
-    <!-- Bandeau d’en-tête -->
+    <!-- En-tête -->
     <div class="bg-success bg-opacity-10 p-4 rounded shadow-sm mb-4">
         <h2 class="text-success fw-bold mb-1">
-            <i class="bi bi-arrow-return-left me-1"></i> Retour de médicament
+            <i class="bi bi-arrow-return-left me-1"></i> Retour de médicaments
         </h2>
-        <small class="text-muted">Gestion du retour sur la vente #{{ sale_item.sale.id }}</small>
+        <small class="text-muted">Vente #{{ sale_items[0].sale.id }} – Retour multiple</small>
     </div>
 
-    <!-- Carte avec les détails de la vente -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-success bg-opacity-75 text-dark fw-semibold">
-            <i class="bi bi-capsule me-1"></i> {{ sale_item.drug.name }}
-        </div>
-        <div class="card-body">
-
-            <div class="row mb-3">
-                <div class="col-md-4"><strong>Quantité vendue :</strong> {{ sale_item.quantity }}</div>
-                <div class="col-md-4"><strong>Déjà retournée :</strong> {{ sale_item.quantity - sale_item.net_quantity_sold }}</div>
-                <div class="col-md-4"><strong>Disponible pour retour :</strong> {{ sale_item.net_quantity_sold }}</div>
+    <!-- Formulaire -->
+    <form method="POST">
+        {% for item in sale_items %}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-success">
+                <i class="bi bi-capsule me-1"></i> {{ item.drug.name }}
             </div>
-            <p><strong>Prix unitaire :</strong> {{ '%.2f'|format(sale_item.unit_price) }} HTG</p>
+            <div class="card-body">
 
-            <!-- Formulaire de retour -->
-            <form method="post" class="mt-4">
-                <div class="mb-3">
-                    <label for="quantity" class="form-label">Quantité à retourner</label>
-                    <input type="number" name="quantity" id="quantity" class="form-control" required
-                           min="1" max="{{ sale_item.net_quantity_sold }}">
-                    <small class="form-text text-muted">Entre 1 et {{ sale_item.net_quantity_sold }}</small>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Quantité vendue :</strong> {{ item.quantity }}</div>
+                    <div class="col-md-4"><strong>Déjà retournée :</strong> {{ item.quantity - item.net_quantity_sold }}</div>
+                    <div class="col-md-4"><strong>Disponible pour retour :</strong> {{ item.net_quantity_sold }}</div>
                 </div>
+                <p><strong>Prix unitaire :</strong> {{ '%.2f'|format(item.unit_price) }} HTG</p>
 
                 <div class="mb-3">
-                    <label for="reason" class="form-label">Raison du retour (optionnel)</label>
-                    <input type="text" name="reason" id="reason" class="form-control"
-                           maxlength="100" placeholder="Ex: Médicament endommagé, erreur client, etc.">
+                    <label for="quantity_{{ item.id }}" class="form-label">Quantité à retourner</label>
+                    <input type="number"
+                           name="quantity_{{ item.id }}"
+                           id="quantity_{{ item.id }}"
+                           class="form-control"
+                           min="0"
+                           max="{{ item.net_quantity_sold }}"
+                           placeholder="0">
+                    <small class="form-text text-muted">Entre 0 et {{ item.net_quantity_sold }}</small>
                 </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-circle me-1"></i> Valider le retour
-                    </button>
-                    <a href="{{ url_for('sale.list_sales') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-circle me-1"></i> Annuler
-                    </a>
+                <div class="mb-3">
+                    <label for="reason_{{ item.id }}" class="form-label">Raison du retour (optionnel)</label>
+                    <input type="text"
+                           name="reason_{{ item.id }}"
+                           id="reason_{{ item.id }}"
+                           class="form-control"
+                           maxlength="100"
+                           placeholder="Ex: Médicament endommagé, erreur client...">
                 </div>
-            </form>
+
+            </div>
         </div>
-    </div>
+        {% endfor %}
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle me-1"></i> Enregistrer les retours
+            </button>
+            <a href="{{ url_for('sale.list_sales') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i> Annuler
+            </a>
+        </div>
+    </form>
 
 </div>
 {% endblock %}

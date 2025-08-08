@@ -348,39 +348,53 @@ def delete_sale(sale_id):
     flash("Vente annulée avec succès.", "info")
     return redirect(url_for('sale.list_sales'))
 
-@bp.route('/return/<int:sale_item_id>', methods=['GET', 'POST'])
+@bp.route('/return/<int:sale_id>', methods=['GET', 'POST'])
 @staff_required
-def return_item(sale_item_id):
-    sale_item = SaleItem.query.options(joinedload(SaleItem.drug)).get_or_404(sale_item_id)
+def return_items(sale_id):
+    # Charger tous les items de la vente
+    sale_items = SaleItem.query.options(joinedload(SaleItem.drug)).filter_by(sale_id=sale_id).all()
 
     if request.method == 'POST':
-        try:
-            qty_returned = int(request.form.get('quantity'))
-            reason = request.form.get('reason', '')
-        except ValueError:
-            flash("Quantité invalide.", "danger")
-            return redirect(request.url)
+        any_returned = False  # Pour vérifier si un retour a été effectué
 
-        if qty_returned <= 0:
-            flash("Quantité doit être supérieure à 0.", "danger")
-            return redirect(request.url)
+        for item in sale_items:
+            try:
+                qty_key = f'quantity_{item.id}'
+                reason_key = f'reason_{item.id}'
 
-        if qty_returned > sale_item.net_quantity_sold:
-            flash("Retour dépasse la quantité vendue restante.", "danger")
-            return redirect(request.url)
+                qty_returned = int(request.form.get(qty_key, 0))
+                reason = request.form.get(reason_key, '').strip()
 
-        return_record = ReturnRecord(
-            sale_item_id=sale_item.id,
-            quantity=qty_returned,
-            reason=reason
-        )
-        db.session.add(return_record)
-        db.session.commit()
+                # Ignore les quantités nulles ou négatives
+                if qty_returned <= 0:
+                    continue
 
-        flash(f"{qty_returned} {sale_item.drug.name} retourné avec succès.", "success")
-        return redirect(url_for('sale.sale_receipt', sale_id=sale_item.sale_id))
+                if qty_returned > item.net_quantity_sold:
+                    flash(f"Quantité retournée pour {item.drug.name} dépasse la quantité vendue restante.", "danger")
+                    continue
 
-    return render_template('sales/return_item.html', sale_item=sale_item)
+                # Créer l’enregistrement du retour
+                return_record = ReturnRecord(
+                    sale_item_id=item.id,
+                    quantity=qty_returned,
+                    reason=reason
+                )
+                db.session.add(return_record)
+                any_returned = True
+
+            except (ValueError, TypeError):
+                flash(f"Quantité invalide pour {item.drug.name}.", "danger")
+                continue
+
+        if any_returned:
+            db.session.commit()
+            flash("Retour(s) enregistré(s) avec succès.", "success")
+        else:
+            flash("Aucun retour n’a été effectué.", "warning")
+
+        return redirect(url_for('sale.return_receipt', sale_id=sale_id))
+
+    return render_template('sales/return_item.html', sale_items=sale_items)
 
 @bp.route('/returns')
 @login_required
@@ -503,16 +517,29 @@ def export_returns():
         download_name="retours_medicaments.xlsx"
     )
 
-@bp.route('/return-receipt/<int:return_id>')
+@bp.route('/return-receipt/<int:sale_id>')
 @staff_required
-def return_receipt(return_id):
-    return_record = ReturnRecord.query.options(
+def return_receipt(sale_id):
+    # Rechercher tous les retours associés à la vente
+    return_records = ReturnRecord.query.options(
         joinedload(ReturnRecord.sale_item).joinedload(SaleItem.drug),
         joinedload(ReturnRecord.sale_item).joinedload(SaleItem.sale)
-    ).get_or_404(return_id)
+    ).all()
 
-    return render_template('sales/return_receipt.html', return_record=return_record)
+    # Filtrer manuellement les retours qui appartiennent à la vente souhaitée
+    return_records = [r for r in return_records if r.sale_item and r.sale_item.sale_id == sale_id]
 
+    if not return_records:
+        flash("Aucun retour trouvé pour cette vente.", "warning")
+        return redirect(url_for("sale.list_returns"))
+
+    total_returned = sum(record.amount for record in return_records)
+
+    return render_template(
+        'sales/return_receipt.html',
+        return_records=return_records,
+        total_returned=total_returned
+    )
 
 @bp.route('/sales_by_seller')
 @admin_required

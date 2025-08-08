@@ -66,10 +66,9 @@ class Drug(db.Model):
 
     def current_stock(self):
         purchased = sum(item.quantity for item in self.purchase_items)
-        sold = sum(s.quantity for s in self.sales)
+        sold = sum(s.net_quantity_sold for s in self.sales)
         lost = sum(l.quantity for l in self.losses)
-        returned = sum(r.quantity for s in self.sales for r in s.returns)
-        return purchased - sold - lost + returned
+        return purchased - sold - lost
 
 
 ### VENTES ###

@@ -68,48 +68,66 @@
 
   <!-- Alertes -->
   <div class="col-md-3">
-    <div class="card text-white bg-warning mb-3">
-      <div class="card-header"><i class="fas fa-exclamation-triangle"></i> Alertes</div>
-      <div class="card-body" id="alerts">
-        {% if alerts %}
+  <div class="card border-warning mb-3 shadow-sm">
+    <div class="card-header bg-warning text-white d-flex align-items-center">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Alertes</strong>
+    </div>
+    <div class="card-body" id="alerts" style="max-height: 65px; overflow-y: auto;">
+      {% if alerts %}
+        <ul class="list-group list-group-flush">
           {% for alert in alerts %}
-          <div class="alert-item alert alert-warning" role="alert">{{ alert }}</div>
+          <li class="list-group-item list-group-item-warning d-flex align-items-center">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span>{{ alert }}</span>
+          </li>
           {% endfor %}
-        {% else %}
-          <div>Aucune alerte</div>
-        {% endif %}
-      </div>
+        </ul>
+      {% else %}
+        <p class="text-muted mb-0 fst-italic text-center">Aucune alerte pour le moment.</p>
+      {% endif %}
     </div>
   </div>
+</div>
 
   <!-- Prochaines péremptions -->
   <div class="col-md-3">
-    <div class="card text-white bg-danger mb-3">
-      <div class="card-header"><i class="fas fa-calendar-times"></i> Prochaines péremptions</div>
-      <div class="card-body">
-        <ul class="list-unstyled mb-0">
+  <div class="card border-danger mb-3 shadow-sm">
+    <div class="card-header bg-danger text-white d-flex align-items-center">
+      <i class="fas fa-calendar-times me-2"></i>
+      <strong>Prochaines péremptions</strong>
+    </div>
+    <div class="card-body" style="max-height: 65px; overflow-y: auto;">
+      {% if near_expiry %}
+        <ul class="list-group list-group-flush">
           {% for drug, days_left in near_expiry %}
-            <li><strong>{{ drug.name }}</strong> - dans {{ days_left }} jours</li>
-          {% else %}
-            <li>Aucune alerte de péremption</li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span><strong>{{ drug.name }}</strong></span>
+              <span class="badge bg-danger rounded-pill">{{ days_left }} jours</span>
+            </li>
           {% endfor %}
         </ul>
-      </div>
+      {% else %}
+        <p class="text-muted mb-0 fst-italic text-center">Aucune alerte de péremption</p>
+      {% endif %}
     </div>
   </div>
 </div>
-<div class="card mb-4">
-  <div class="card-header bg-success bg-opacity-10"><i class="fas fa-user-check"></i> Utilisateurs actifs cette semaine</div>
-  <div class="card-body">
-    <ul class="mb-0">
-      {% for user in active_users %}
-        <li>{{ user.username }}</li>
-      {% else %}
-        <li>Aucun utilisateur actif cette semaine.</li>
-      {% endfor %}
-    </ul>
+<div class="col-md-12">
+  <div class="card mb-4">
+    <div class="card-header bg-success bg-opacity-10"><i class="fas fa-user-check"></i> Utilisateurs actifs cette semaine</div>
+    <div class="card-body">
+      <ul class="mb-0">
+        {% for user in active_users %}
+          <li>{{ user.username }}</li>
+        {% else %}
+          <li>Aucun utilisateur actif cette semaine.</li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
 </div>
+
 <div class="row">
   <!-- Top 5 Médicaments -->
   <div class="col-md-6 mb-4">
@@ -128,7 +146,6 @@
       </div>
     </div>
   </div>
-
   <!-- Camembert Raisons de pertes -->
   <div class="col-md-6 mb-4">
     <div class="card h-100">

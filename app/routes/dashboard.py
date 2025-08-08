@@ -135,6 +135,31 @@ def dashboard():
     # Raisons les plus fréquentes de pertes
     loss_reasons = get_frequent_loss_reasons()
     active_users = get_active_users_by_sales(days=7)
+
+    alerts.clear()  # Vider les alertes à chaque appel
+
+    # Alertes stock faible
+    for drug in Drug.query.all():
+        stock = drug.current_stock()
+        if stock <= LOW_STOCK_THRESHOLD:
+            msg = f"Stock faible pour {drug.name} : {stock} unités restantes."
+            add_alert(msg)
+
+    # Alertes médicaments proches de péremption
+    # today = datetime.utcnow().date()
+    # for drug in Drug.query.all():
+    #     if drug.expiration_date:
+    #         days_left = (drug.expiration_date - today).days
+    #         if 0 <= days_left <= 30:
+    #             msg = f"{drug.name} proche de la péremption ({days_left} jours restants)."
+    #             add_alert(msg)
+
+    # Alerte pertes élevées aujourd’hui (seuil à adapter)
+    PERTE_ELEVEE_SEUIL = 10
+    if loss_today > PERTE_ELEVEE_SEUIL:
+        msg = f"Pertes élevées aujourd’hui : {loss_today} unités perdues."
+        add_alert(msg)
+
     common_data = dict(
         total_stock=total_stock,
         ventes_du_jour=ventes_du_jour,

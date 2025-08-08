@@ -4,78 +4,89 @@
     <meta charset="UTF-8">
     <title>Reçu de vente</title>
     <style>
+    body {
+        font-family: monospace;
+        font-size: 12px;
+        max-width: 300px;
+        margin: auto;
+        padding: 10px;
+        color: #000;
+        background-color: #fff;
+    }
+
+    .header {
+        text-align: center;
+        border-bottom: 1px dashed #000;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+    }
+
+    .logo {
+        max-width: 70px;
+        margin-bottom: 5px;
+    }
+
+    .pharmacy-info {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        font-size: 12px;
+    }
+
+    th, td {
+        padding: 3px 2px;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    thead tr {
+        border-bottom: 1px dashed #000;
+    }
+
+    tbody tr:not(:last-child) {
+        border-bottom: 1px dotted #000;
+    }
+
+    tfoot td {
+        font-weight: bold;
+        padding-top: 5px;
+        border-top: 1px dashed #000;
+    }
+
+    .totals {
+        margin-top: 8px;
+    }
+
+    .totals p {
+        margin: 2px 0;
+    }
+
+    .barcode {
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .footer {
+        text-align: center;
+        font-size: 11px;
+        margin-top: 12px;
+    }
+
+    @media print {
+        button, a {
+            display: none !important;
+        }
         body {
-            font-family: monospace;
-            max-width: 300px;
-            margin: auto;
-            padding: 10px;
+            margin: 0;
+            padding: 0;
         }
-
-        .header {
-            text-align: center;
-            border-bottom: 1px dashed #000;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-        }
-
-        .logo {
-            max-width: 80px;
-            margin-bottom: 5px;
-        }
-
-        .pharmacy-info {
-            font-size: 13px;
-            line-height: 1.4;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 13px;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 3px 0;
-        }
-
-        tfoot td {
-            font-weight: bold;
-            border-top: 1px solid #000;
-            padding-top: 4px;
-        }
-
-        .barcode {
-            text-align: center;
-            margin-top: 12px;
-        }
-
-        .footer {
-            text-align: center;
-            font-size: 12px;
-            margin-top: 14px;
-        }
-
-        .totals {
-            margin-top: 10px;
-            font-size: 13px;
-        }
-
-        .totals p {
-            margin: 2px 0;
-        }
-
-        @media print {
-            button, a {
-                display: none;
-            }
-            body {
-                margin: 0;
-                padding: 0;
-            }
-        }
-    </style>
+    }
+</style>
 </head>
 <body>
 
@@ -148,7 +159,7 @@
 </div>
 
 <!-- ACTIONS -->
-<!-- <a href="{{ url_for('sale.list_sales') }}" class="btn btn-secondary mt-3">← Retour à la liste</a> -->
+<a href="{{ url_for('sale.list_sales') }}" class="btn btn-secondary mt-3">← Retour à la liste</a>
 <button onclick="window.print()">🖨️ Imprimer</button>
 
 <!-- BARCODE SCRIPT -->

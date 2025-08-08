@@ -67,7 +67,7 @@
                         <td>{{ r.date.strftime("%d/%m/%Y %H:%M") }}</td>
                         <td>{{ r.sale_item.drug.name }}</td>
                         <td>
-                            <a href="{{ url_for('sale.return_receipt', return_id=r.id) }}" class="text-decoration-none" target="_blank">
+                            <a href="{{ url_for('sale.return_receipt', sale_id=r.sale_item.sale.id) }}" class="text-decoration-none" target="_blank">
                                 {{ r.sale_item.sale.id }}
                             </a>
                         </td>
@@ -75,7 +75,7 @@
                         <td class="text-end">{{ "%.2f"|format(r.amount) }} HTG</td>
                         <td>{{ r.reason or "-" }}</td>
                         <td class="text-center">
-                            <a href="{{ url_for('sale.return_receipt', return_id=r.id) }}" class="btn btn-sm btn-outline-success" target="_blank" title="Voir reçu">
+                            <a href="{{ url_for('sale.return_receipt', sale_id=r.sale_item.sale.id) }}" class="btn btn-sm btn-outline-success" target="_blank" title="Voir reçu">
                                 <i class="bi bi-receipt"></i> Reçu
                             </a>
                         </td>
